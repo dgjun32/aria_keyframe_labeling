@@ -1,0 +1,21 @@
+# Data directories
+dataset/
+vrs_files/
+preproc_files/
+
+# Large files
+*.zip
+*.vrs
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# macOS
+.DS_Store
+
+# Model checkpoints (optional - uncomment if you don't want to track these)
+# model/checkpoints/
+# inference/model/pretrained_weights/
