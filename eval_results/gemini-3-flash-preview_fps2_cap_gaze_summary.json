@@ -1,0 +1,93 @@
+{
+  "model": "gemini-3-flash-preview",
+  "video_fps": 2,
+  "caption": true,
+  "gaze_annot": true,
+  "num_episodes": 79,
+  "num_success": 79,
+  "num_failures": 0,
+  "mid_frame_accuracy": {
+    "hits": 56,
+    "total": 79,
+    "rate": 0.7089
+  },
+  "nearest_gt_dist": {
+    "mean": 1.481,
+    "median": 0,
+    "std": 5.4699
+  },
+  "frame_hit@0": {
+    "hits": 56,
+    "total": 79,
+    "rate": 0.7089
+  },
+  "frame_hit@1": {
+    "hits": 59,
+    "total": 79,
+    "rate": 0.7468
+  },
+  "frame_hit@3": {
+    "hits": 68,
+    "total": 79,
+    "rate": 0.8608
+  },
+  "frame_hit@5": {
+    "hits": 76,
+    "total": 79,
+    "rate": 0.962
+  },
+  "iou": {
+    "mean": 0.4476,
+    "median": 0.4167,
+    "std": 0.2299
+  },
+  "midpoint_error": {
+    "mean": 0.2681,
+    "median": 0.2,
+    "std": 0.391
+  },
+  "gt_coverage": {
+    "mean": 0.7527,
+    "median": 0.8125,
+    "std": 0.275
+  },
+  "pred_precision": {
+    "mean": 0.5428,
+    "median": 0.5333,
+    "std": 0.2877
+  },
+  "start_error": {
+    "mean": 0.4266,
+    "median": 0.3667,
+    "std": 0.4099
+  },
+  "end_error": {
+    "mean": 0.2388,
+    "median": 0.1667,
+    "std": 0.3863
+  },
+  "boundary_error": {
+    "mean": 0.3327,
+    "median": 0.3,
+    "std": 0.375
+  },
+  "hit@0.5s": {
+    "hits": 75,
+    "total": 79,
+    "rate": 0.9494
+  },
+  "hit@1.0s": {
+    "hits": 78,
+    "total": 79,
+    "rate": 0.9873
+  },
+  "hit@1.5s": {
+    "hits": 78,
+    "total": 79,
+    "rate": 0.9873
+  },
+  "total_cost_usd": 0.5258,
+  "total_input_tokens": 116264,
+  "total_output_tokens": 8065,
+  "total_thinking_tokens": 68748
+}

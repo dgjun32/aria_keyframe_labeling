@@ -9,25 +9,33 @@ Interactive Tkinter GUI for:
   - Binary keyframe annotation (0/1)
   - Automatic dataset export on save
 
+Usage:
+  python labeler.py --prefix 2f_store_dongjun_single_object
+
 Controls:
-  Right / D / L           : Next frame
-  Left  / A / H           : Prev frame
-  Shift+Right / Shift+D   : +10 frames
-  Shift+Left  / Shift+A   : -10 frames
-  Ctrl+Right              : +100 frames
-  Ctrl+Left               : -100 frames
+  Right / D / L           : +2 frames
+  Left  / A / H           : -2 frames
+  Shift+Right / Shift+D   : +20 frames
+  Shift+Left  / Shift+A   : -20 frames
+  Ctrl+Right              : +200 frames
+  Ctrl+Left               : -200 frames
+  [                       : Mark segment start
+  ]                       : Mark segment end (fills range)
   Space                   : Toggle keyframe (on/off)
   Delete / Backspace      : Remove keyframe
   P                       : Play / Pause
-  [ / ]                   : Prev / Next task
+  , / .                   : Prev / Next task
   S                       : Save annotations + export dataset
   Q / Escape              : Quit (saves first)
 """
 
 from __future__ import annotations
 
+import argparse
+import glob
 import os
 import json
+import re
 import shutil
 import subprocess
 import tempfile
@@ -51,6 +59,7 @@ PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
 PREPROC_DIR = os.path.join(PROJECT_DIR, "preproc_files")
 DATASET_DIR = os.path.join(PROJECT_DIR, "dataset")
 SAVE_PATH = os.path.join(PREPROC_DIR, "keyframe_annotations.json")
+EXPORT_MAP_PATH = os.path.join(PREPROC_DIR, "export_mapping.json")
 DISPLAY_W = 640  # display width (aspect ratio preserved)
 
 
@@ -90,12 +99,13 @@ def _transcribe_task(client, audio_path: str) -> dict:
 
 # ══════════════════════════════════════════════════════════════════════════
 class LabelerApp:
-    def __init__(self, root: tk.Tk):
+    def __init__(self, root: tk.Tk, prefix: str = "episode"):
         self.root = root
         self.root.title("Keyframe Labeler")
         self.root.configure(bg="#1e1e1e")
 
         # ── state ──
+        self.prefix = prefix
         self.task_names = discover_tasks(PREPROC_DIR)
         self.task_idx = 0
         self.task_data: TaskData | None = None
@@ -106,6 +116,11 @@ class LabelerApp:
         self.cur_frame = 0
         self.disp_w = DISPLAY_W
         self.disp_h = DISPLAY_W  # updated on task load
+        self._segment_start: int | None = None  # for [ ] segment marking
+
+        # ── task→episode mapping (persisted across runs) ──
+        self.export_map: dict[str, str] = {}  # {task_name: episode_name}
+        self._load_export_map()
 
         # ── load saved annotations ──
         self._load_annotations()
@@ -127,6 +142,20 @@ class LabelerApp:
     # ═══════════════════════════════════════════════════════════════════════
     #  PERSISTENCE
     # ═══════════════════════════════════════════════════════════════════════
+    def _load_export_map(self):
+        """Load task→episode mapping from previous sessions."""
+        if os.path.exists(EXPORT_MAP_PATH):
+            try:
+                with open(EXPORT_MAP_PATH) as f:
+                    self.export_map = json.load(f)
+            except Exception as e:
+                print(f"[export_map load error] {e}")
+
+    def _save_export_map(self):
+        os.makedirs(os.path.dirname(EXPORT_MAP_PATH), exist_ok=True)
+        with open(EXPORT_MAP_PATH, "w") as f:
+            json.dump(self.export_map, f, indent=2)
+
     def _load_annotations(self):
         if os.path.exists(SAVE_PATH):
             try:
@@ -149,7 +178,7 @@ class LabelerApp:
         with open(SAVE_PATH, "w") as f:
             json.dump(self.annotations, f, indent=2)
         self._export_dataset()
-        self._status(f"Saved + exported to {DATASET_DIR}")
+        self._status(f"Saved + exported to {DATASET_DIR} (prefix: {self.prefix})")
 
     # ═══════════════════════════════════════════════════════════════════════
     #  WHISPER TRANSCRIPT CACHING
@@ -195,12 +224,39 @@ class LabelerApp:
     # ═══════════════════════════════════════════════════════════════════════
     #  DATASET EXPORT
     # ═══════════════════════════════════════════════════════════════════════
+    def _next_episode_number(self) -> int:
+        """Find the next available episode number for the current prefix."""
+        os.makedirs(DATASET_DIR, exist_ok=True)
+        pattern = re.compile(rf"^{re.escape(self.prefix)}_(\d+)$")
+        max_num = 0
+        for name in os.listdir(DATASET_DIR):
+            m = pattern.match(name)
+            if m:
+                max_num = max(max_num, int(m.group(1)))
+        return max_num + 1
+
     def _export_dataset(self):
-        """Export labeled episodes to dataset/ directory."""
+        """Export labeled episodes to dataset/ with prefix-based naming.
+
+        Uses export_map to remember task→episode assignments so that
+        re-saving overwrites the same episode instead of creating new ones.
+        """
         os.makedirs(DATASET_DIR, exist_ok=True)
 
+        exported = 0
         for task_name, kfs in self.annotations.items():
-            episode_dir = os.path.join(DATASET_DIR, task_name)
+            if not kfs:
+                continue
+
+            # Reuse existing episode name, or assign a new one
+            if task_name in self.export_map:
+                episode_name = self.export_map[task_name]
+            else:
+                next_num = self._next_episode_number()
+                episode_name = f"{self.prefix}_{next_num}"
+                self.export_map[task_name] = episode_name
+
+            episode_dir = os.path.join(DATASET_DIR, episode_name)
             os.makedirs(episode_dir, exist_ok=True)
 
             # 1. video.mp4
@@ -222,6 +278,12 @@ class LabelerApp:
 
             # 4. labels.npy
             self._export_labels_npy(task_name, episode_dir, kfs)
+
+            exported += 1
+
+        # Persist the mapping so next run remembers assignments
+        self._save_export_map()
+        print(f"[export] {exported} episode(s) exported (prefix: {self.prefix})")
 
     def _export_gaze_json(self, task_name: str, episode_dir: str):
         """Convert gaze.npz + pitch_yaw.npz to gaze.json."""
@@ -358,7 +420,7 @@ class LabelerApp:
         help_frame.pack(fill=tk.X, padx=8, pady=(0, 2))
         tk.Label(
             help_frame,
-            text="Space=toggle KF  Del=remove  P=play  [/]=tasks  S=save+export",
+            text="[=seg start  ]=seg end  Space=toggle KF  Del=remove  P=play  ,/.=tasks  S=save",
             bg="#1e1e1e", fg="#666666", font=("Courier", 9),
         ).pack(side=tk.LEFT)
 
@@ -373,11 +435,14 @@ class LabelerApp:
             cursor="hand2",
         )
 
-        tk.Button(btn_frame, text="<< Prev [", command=self._prev_task,
+        tk.Button(btn_frame, text="<< Prev ,", command=self._prev_task,
                   **btn_cfg).pack(side=tk.LEFT, padx=3)
-        tk.Button(btn_frame, text=">> Next ]", command=self._next_task,
+        tk.Button(btn_frame, text=">> Next .", command=self._next_task,
                   **btn_cfg).pack(side=tk.LEFT, padx=3)
         tk.Button(btn_frame, text="Play/Pause P", command=self._toggle_play,
+                  **btn_cfg).pack(side=tk.LEFT, padx=3)
+        tk.Button(btn_frame, text="Seg [ ]",
+                  command=self._mark_segment_start,
                   **btn_cfg).pack(side=tk.LEFT, padx=3)
         tk.Button(btn_frame, text="Toggle KF Space",
                   command=self._toggle_keyframe,
@@ -468,25 +533,27 @@ class LabelerApp:
     # ═══════════════════════════════════════════════════════════════════════
     def _bind_keys(self):
         r = self.root
-        r.bind("<Right>", lambda e: self._step(1))
-        r.bind("<Left>", lambda e: self._step(-1))
-        r.bind("d", lambda e: self._step(1))
-        r.bind("a", lambda e: self._step(-1))
-        r.bind("l", lambda e: self._step(1))
-        r.bind("h", lambda e: self._step(-1))
-        r.bind("<Shift-Right>", lambda e: self._step(10))
-        r.bind("<Shift-Left>", lambda e: self._step(-10))
-        r.bind("<Shift-D>", lambda e: self._step(10))
-        r.bind("<Shift-A>", lambda e: self._step(-10))
-        r.bind("<Control-Right>", lambda e: self._step(100))
-        r.bind("<Control-Left>", lambda e: self._step(-100))
+        r.bind("<Right>", lambda e: self._step(2))
+        r.bind("<Left>", lambda e: self._step(-2))
+        r.bind("d", lambda e: self._step(2))
+        r.bind("a", lambda e: self._step(-2))
+        r.bind("l", lambda e: self._step(2))
+        r.bind("h", lambda e: self._step(-2))
+        r.bind("<Shift-Right>", lambda e: self._step(20))
+        r.bind("<Shift-Left>", lambda e: self._step(-20))
+        r.bind("<Shift-D>", lambda e: self._step(20))
+        r.bind("<Shift-A>", lambda e: self._step(-20))
+        r.bind("<Control-Right>", lambda e: self._step(200))
+        r.bind("<Control-Left>", lambda e: self._step(-200))
+        r.bind("[", lambda e: self._mark_segment_start())
+        r.bind("]", lambda e: self._mark_segment_end())
         r.bind("<space>", lambda e: self._toggle_keyframe())
         r.bind("<Delete>", lambda e: self._remove_keyframe())
         r.bind("<BackSpace>", lambda e: self._remove_keyframe())
         r.bind("p", lambda e: self._toggle_play())
         r.bind("P", lambda e: self._toggle_play())
-        r.bind("]", lambda e: self._next_task())
-        r.bind("[", lambda e: self._prev_task())
+        r.bind(",", lambda e: self._prev_task())
+        r.bind(".", lambda e: self._next_task())
         r.bind("s", lambda e: self._save_annotations())
         r.bind("S", lambda e: self._save_annotations())
         r.bind("q", lambda e: self._quit())
@@ -702,6 +769,38 @@ class LabelerApp:
     # ═══════════════════════════════════════════════════════════════════════
     #  KEYFRAME ANNOTATION (BINARY)
     # ═══════════════════════════════════════════════════════════════════════
+    def _mark_segment_start(self):
+        """Mark segment start with [ key."""
+        self._segment_start = self.cur_frame
+        self._status(f"Segment start: frame {self.cur_frame}  (press ] to set end)")
+
+    def _mark_segment_end(self):
+        """Mark segment end with ] key — marks all frames in [start, end] as keyframes."""
+        if self._segment_start is None:
+            self._status("No segment start set — press [ first")
+            return
+
+        start = min(self._segment_start, self.cur_frame)
+        end = max(self._segment_start, self.cur_frame)
+
+        task = self.task_names[self.task_idx]
+        kfs = self.annotations.setdefault(task, [])
+        existing_frames = {kf["frame"] for kf in kfs}
+
+        added = 0
+        for f in range(start, end + 1):
+            if f not in existing_frames:
+                kfs.append({"frame": f})
+                added += 1
+        kfs.sort(key=lambda x: x["frame"])
+
+        self._segment_start = None
+        self._status(
+            f"Segment [{start} — {end}]: added {added} keyframes  "
+            f"(total: {len(kfs)})"
+        )
+        self._after_kf_change()
+
     def _toggle_keyframe(self):
         """Toggle keyframe on/off at current frame."""
         task = self.task_names[self.task_idx]
@@ -793,6 +892,13 @@ class LabelerApp:
 
 # ── entry point ───────────────────────────────────────────────────────────
 def main():
+    parser = argparse.ArgumentParser(description="Keyframe Labeler + Dataset Exporter")
+    parser.add_argument(
+        "--prefix", required=True,
+        help="Episode prefix for dataset/ naming (e.g. 2f_store_dongjun_single_object)",
+    )
+    args = parser.parse_args()
+
     root = tk.Tk()
 
     # Dark ttk theme
@@ -807,7 +913,7 @@ def main():
     style.configure("Vertical.TScrollbar", background="#333333",
                     troughcolor="#1e1e1e", arrowcolor="#888888")
 
-    LabelerApp(root)
+    LabelerApp(root, prefix=args.prefix)
     root.mainloop()
 
 

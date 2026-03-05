@@ -37,7 +37,7 @@ from eye_gaze import EyeGazeInferenceBatch, AriaGazeProjector
 # ── Constants ──────────────────────────────────────────────────────────────
 RGB_STREAM = StreamId("214-1")
 EYE_STREAM = StreamId("211-1")
-TARGET_SIZE = 256
+TARGET_SIZE = 1408
 OUTPUT_FPS = 15
 OUTPUT_SUFFIXES = [
     "_rgb.mp4", "_rgb_with_gaze.mp4", "_gaze.npz", "_pitch_yaw.npz", "_audio.wav"

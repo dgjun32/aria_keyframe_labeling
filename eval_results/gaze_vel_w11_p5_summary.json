@@ -1,0 +1,69 @@
+{
+  "method": "vlm_gaze_velocity",
+  "savgol_window": 11,
+  "savgol_poly": 5,
+  "num_episodes": 62,
+  "num_success": 62,
+  "num_failures": 0,
+  "gaze_accuracy": {
+    "hits": 43,
+    "total": 62,
+    "rate": 0.6935
+  },
+  "gaze_nearest": {
+    "mean": 3.4516,
+    "median": 0.0,
+    "std": 11.7231
+  },
+  "gaze_frame_hit@0": {
+    "hits": 43,
+    "total": 62,
+    "rate": 0.6935
+  },
+  "gaze_frame_hit@1": {
+    "hits": 45,
+    "total": 62,
+    "rate": 0.7258
+  },
+  "gaze_frame_hit@3": {
+    "hits": 52,
+    "total": 62,
+    "rate": 0.8387
+  },
+  "gaze_frame_hit@5": {
+    "hits": 54,
+    "total": 62,
+    "rate": 0.871
+  },
+  "mid_accuracy": {
+    "hits": 46,
+    "total": 62,
+    "rate": 0.7419
+  },
+  "mid_nearest": {
+    "mean": 2.9355,
+    "median": 0.0,
+    "std": 11.2204
+  },
+  "mid_frame_hit@0": {
+    "hits": 46,
+    "total": 62,
+    "rate": 0.7419
+  },
+  "mid_frame_hit@1": {
+    "hits": 48,
+    "total": 62,
+    "rate": 0.7742
+  },
+  "mid_frame_hit@3": {
+    "hits": 54,
+    "total": 62,
+    "rate": 0.871
+  },
+  "mid_frame_hit@5": {
+    "hits": 56,
+    "total": 62,
+    "rate": 0.9032
+  },
+  "total_cost_usd": 0.9963
+}

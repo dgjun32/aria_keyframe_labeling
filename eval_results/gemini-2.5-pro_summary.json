@@ -1,0 +1,90 @@
+{
+  "model": "gemini-2.5-pro",
+  "num_episodes": 62,
+  "num_success": 62,
+  "num_failures": 0,
+  "mid_frame_accuracy": {
+    "hits": 50,
+    "total": 62,
+    "rate": 0.8065
+  },
+  "nearest_gt_dist": {
+    "mean": 2.1774,
+    "median": 0.0,
+    "std": 9.6607
+  },
+  "frame_hit@0": {
+    "hits": 50,
+    "total": 62,
+    "rate": 0.8065
+  },
+  "frame_hit@1": {
+    "hits": 52,
+    "total": 62,
+    "rate": 0.8387
+  },
+  "frame_hit@3": {
+    "hits": 54,
+    "total": 62,
+    "rate": 0.871
+  },
+  "frame_hit@5": {
+    "hits": 56,
+    "total": 62,
+    "rate": 0.9032
+  },
+  "iou": {
+    "mean": 0.4982,
+    "median": 0.5259,
+    "std": 0.259
+  },
+  "midpoint_error": {
+    "mean": 0.3168,
+    "median": 0.1667,
+    "std": 0.6897
+  },
+  "gt_coverage": {
+    "mean": 0.7517,
+    "median": 0.8571,
+    "std": 0.2998
+  },
+  "pred_precision": {
+    "mean": 0.5726,
+    "median": 0.5774,
+    "std": 0.2939
+  },
+  "start_error": {
+    "mean": 0.3857,
+    "median": 0.285,
+    "std": 0.6883
+  },
+  "end_error": {
+    "mean": 0.3372,
+    "median": 0.2,
+    "std": 0.7008
+  },
+  "boundary_error": {
+    "mean": 0.3614,
+    "median": 0.2334,
+    "std": 0.6781
+  },
+  "hit@0.5s": {
+    "hits": 53,
+    "total": 62,
+    "rate": 0.8548
+  },
+  "hit@1.0s": {
+    "hits": 60,
+    "total": 62,
+    "rate": 0.9677
+  },
+  "hit@1.5s": {
+    "hits": 61,
+    "total": 62,
+    "rate": 0.9839
+  },
+  "total_cost_usd": 0.9662,
+  "total_input_tokens": 300746,
+  "total_output_tokens": 5457,
+  "total_thinking_tokens": 53571
+}

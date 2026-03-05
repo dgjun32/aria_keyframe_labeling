@@ -1,0 +1,1680 @@
+{
+  "config": {
+    "model": "gemini-3-flash-preview",
+    "gaze_annot": false,
+    "caption": true,
+    "video_fps": 2,
+    "config_name": "cap_only"
+  },
+  "episodes": [
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_1",
+      "predicted_interval_sec": [
+        9.0,
+        10.5
+      ],
+      "predicted_interval_frames": [
+        135,
+        158
+      ],
+      "gt_interval_frames": [
+        152,
+        155
+      ],
+      "iou": 0.1333,
+      "mid_frame_hit": false,
+      "midpoint_error_sec": 0.4833,
+      "pred_mid_frame": 146,
+      "inference_time_sec": 8.863
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_10",
+      "predicted_interval_sec": [
+        5.5,
+        7.0
+      ],
+      "predicted_interval_frames": [
+        82,
+        105
+      ],
+      "gt_interval_frames": [
+        89,
+        106
+      ],
+      "iou": 0.6809,
+      "mid_frame_hit": true,
+      "midpoint_error_sec": 0.25,
+      "pred_mid_frame": 94,
+      "inference_time_sec": 7.434
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_11",
+      "predicted_interval_sec": [
+        3.5,
+        4.5
+      ],
+      "predicted_interval_frames": [
+        52,
+        68
+      ],
+      "gt_interval_frames": [
+        57,
+        72
+      ],
+      "iou": 0.5385,
+      "mid_frame_hit": true,
+      "midpoint_error_sec": 0.3,
+      "pred_mid_frame": 60,
+      "inference_time_sec": 7.312
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_12",
+      "predicted_interval_sec": [
+        1.0,
+        1.5
+      ],
+      "predicted_interval_frames": [
+        15,
+        22
+      ],
+      "gt_interval_frames": [
+        66,
+        73
+      ],
+      "iou": 0.0,
+      "mid_frame_hit": false,
+      "midpoint_error_sec": 3.3833,
+      "pred_mid_frame": 19,
+      "inference_time_sec": 10.293
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_13",
+      "predicted_interval_sec": [
+        3.5,
+        4.5
+      ],
+      "predicted_interval_frames": [
+        52,
+        68
+      ],
+      "gt_interval_frames": [
+        57,
+        65
+      ],
+      "iou": 0.5333,
+      "mid_frame_hit": true,
+      "midpoint_error_sec": 0.0667,
+      "pred_mid_frame": 60,
+      "inference_time_sec": 6.208
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_14",
+      "predicted_interval_sec": [
+        9.5,
+        10.5
+      ],
+      "predicted_interval_frames": [
+        142,
+        158
+      ],
+      "gt_interval_frames": [
+        150,
+        156
+      ],
+      "iou": 0.4,
+      "mid_frame_hit": true,
+      "midpoint_error_sec": 0.2,
+      "pred_mid_frame": 150,
+      "inference_time_sec": 7.202
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_15",
+      "predicted_interval_sec": [
+        6.5,
+        7.5
+      ],
+      "predicted_interval_frames": [
+        98,
+        112
+      ],
+      "gt_interval_frames": [
+        104,
+        112
+      ],
+      "iou": 0.5334,
+      "mid_frame_hit": true,
+      "midpoint_error_sec": 0.2,
+      "pred_mid_frame": 105,
+      "inference_time_sec": 7.685
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_16",
+      "predicted_interval_sec": [
+        6.0,
+        7.0
+      ],
+      "predicted_interval_frames": [
+        90,
+        105
+      ],
+      "gt_interval_frames": [
+        98,
+        104
+      ],
+      "iou": 0.4,
+      "mid_frame_hit": true,
+      "midpoint_error_sec": 0.2333,
+      "pred_mid_frame": 98,
+      "inference_time_sec": 5.563
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_17",
+      "predicted_interval_sec": [
+        3.5,
+        5.0
+      ],
+      "predicted_interval_frames": [
+        52,
+        75
+      ],
+      "gt_interval_frames": [
+        58,
+        72
+      ],
+      "iou": 0.6222,
+      "mid_frame_hit": true,
+      "midpoint_error_sec": 0.0833,
+      "pred_mid_frame": 64,
+      "inference_time_sec": 8.349
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_18",
+      "predicted_interval_sec": [
+        6.0,
+        7.0
+      ],
+      "predicted_interval_frames": [
+        90,
+        105
+      ],
+      "gt_interval_frames": [
+        96,
+        102
+      ],
+      "iou": 0.4,
+      "mid_frame_hit": true,
+      "midpoint_error_sec": 0.1,
+      "pred_mid_frame": 98,
+      "inference_time_sec": 7.868
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_19",
+      "predicted_interval_sec": [
+        9.0,
+        10.0
+      ],
+      "predicted_interval_frames": [
+        135,
+        150
+      ],
+      "gt_interval_frames": [
+        140,
+        144
+      ],
+      "iou": 0.2667,
+      "mid_frame_hit": true,
+      "midpoint_error_sec": 0.0333,
+      "pred_mid_frame": 142,
+      "inference_time_sec": 8.639
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_2",
+      "predicted_interval_sec": [
+        5.5,
+        6.5
+      ],
+      "predicted_interval_frames": [
+        82,
+        98
+      ],
+      "gt_interval_frames": [
+        95,
+        97
+      ],
+      "iou": 0.1334,
+      "mid_frame_hit": false,
+      "midpoint_error_sec": 0.4,
+      "pred_mid_frame": 90,
+      "inference_time_sec": 6.951
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_20",
+      "predicted_interval_sec": [
+        3.5,
+        4.5
+      ],
+      "predicted_interval_frames": [
+        52,
+        68
+      ],
+      "gt_interval_frames": [
+        60,
+        72
+      ],
+      "iou": 0.3846,
+      "mid_frame_hit": true,
+      "midpoint_error_sec": 0.4,
+      "pred_mid_frame": 60,
+      "inference_time_sec": 6.083
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_21",
+      "predicted_interval_sec": [
+        4.5,
+        5.5
+      ],
+      "predicted_interval_frames": [
+        68,
+        82
+      ],
+      "gt_interval_frames": [
+        72,
+        86
+      ],
+      "iou": 0.5676,
+      "mid_frame_hit": true,
+      "midpoint_error_sec": 0.2667,
+      "pred_mid_frame": 75,
+      "inference_time_sec": 7.014
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_22",
+      "predicted_interval_sec": [
+        6.5,
+        8.0
+      ],
+      "predicted_interval_frames": [
+        98,
+        120
+      ],
+      "gt_interval_frames": [
+        106,
+        114
+      ],
+      "iou": 0.3555,
+      "mid_frame_hit": true,
+      "midpoint_error_sec": 0.0833,
+      "pred_mid_frame": 109,
+      "inference_time_sec": 7.326
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_23",
+      "predicted_interval_sec": [
+        3.5,
+        4.5
+      ],
+      "predicted_interval_frames": [
+        52,
+        68
+      ],
+      "gt_interval_frames": [
+        56,
+        68
+      ],
+      "iou": 0.742,
+      "mid_frame_hit": true,
+      "midpoint_error_sec": 0.1333,
+      "pred_mid_frame": 60,
+      "inference_time_sec": 7.352
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_24",
+      "predicted_interval_sec": [
+        6.0,
+        7.5
+      ],
+      "predicted_interval_frames": [
+        90,
+        112
+      ],
+      "gt_interval_frames": [
+        98,
+        110
+      ],
+      "iou": 0.5333,
+      "mid_frame_hit": true,
+      "midpoint_error_sec": 0.1833,
+      "pred_mid_frame": 101,
+      "inference_time_sec": 6.431
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_25",
+      "predicted_interval_sec": [
+        6.5,
+        7.5
+      ],
+      "predicted_interval_frames": [
+        98,
+        112
+      ],
+      "gt_interval_frames": [
+        100,
+        108
+      ],
+      "iou": 0.5333,
+      "mid_frame_hit": true,
+      "midpoint_error_sec": 0.0667,
+      "pred_mid_frame": 105,
+      "inference_time_sec": 5.903
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_26",
+      "predicted_interval_sec": [
+        5.5,
+        6.5
+      ],
+      "predicted_interval_frames": [
+        82,
+        98
+      ],
+      "gt_interval_frames": [
+        86,
+        96
+      ],
+      "iou": 0.6667,
+      "mid_frame_hit": true,
+      "midpoint_error_sec": 0.0667,
+      "pred_mid_frame": 90,
+      "inference_time_sec": 5.261
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_27",
+      "predicted_interval_sec": [
+        4.0,
+        5.5
+      ],
+      "predicted_interval_frames": [
+        60,
+        82
+      ],
+      "gt_interval_frames": [
+        68,
+        78
+      ],
+      "iou": 0.4445,
+      "mid_frame_hit": true,
+      "midpoint_error_sec": 0.1167,
+      "pred_mid_frame": 71,
+      "inference_time_sec": 7.778
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_28",
+      "predicted_interval_sec": [
+        5.5,
+        6.5
+      ],
+      "predicted_interval_frames": [
+        82,
+        98
+      ],
+      "gt_interval_frames": [
+        86,
+        96
+      ],
+      "iou": 0.6667,
+      "mid_frame_hit": true,
+      "midpoint_error_sec": 0.0667,
+      "pred_mid_frame": 90,
+      "inference_time_sec": 6.385
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_29",
+      "predicted_interval_sec": [
+        5.0,
+        6.5
+      ],
+      "predicted_interval_frames": [
+        75,
+        98
+      ],
+      "gt_interval_frames": [
+        76,
+        94
+      ],
+      "iou": 0.8,
+      "mid_frame_hit": true,
+      "midpoint_error_sec": 0.0833,
+      "pred_mid_frame": 86,
+      "inference_time_sec": 8.395
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_3",
+      "predicted_interval_sec": [
+        2.5,
+        3.5
+      ],
+      "predicted_interval_frames": [
+        38,
+        52
+      ],
+      "gt_interval_frames": [
+        41,
+        55
+      ],
+      "iou": 0.6572,
+      "mid_frame_hit": true,
+      "midpoint_error_sec": 0.2,
+      "pred_mid_frame": 45,
+      "inference_time_sec": 6.428
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_30",
+      "predicted_interval_sec": [
+        3.0,
+        4.0
+      ],
+      "predicted_interval_frames": [
+        45,
+        60
+      ],
+      "gt_interval_frames": [
+        56,
+        62
+      ],
+      "iou": 0.2353,
+      "mid_frame_hit": false,
+      "midpoint_error_sec": 0.4333,
+      "pred_mid_frame": 52,
+      "inference_time_sec": 7.566
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_31",
+      "predicted_interval_sec": [
+        4.0,
+        5.5
+      ],
+      "predicted_interval_frames": [
+        60,
+        82
+      ],
+      "gt_interval_frames": [
+        70,
+        78
+      ],
+      "iou": 0.3555,
+      "mid_frame_hit": true,
+      "midpoint_error_sec": 0.1833,
+      "pred_mid_frame": 71,
+      "inference_time_sec": 8.347
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_32",
+      "predicted_interval_sec": [
+        8.0,
+        9.5
+      ],
+      "predicted_interval_frames": [
+        120,
+        142
+      ],
+      "gt_interval_frames": [
+        134,
+        142
+      ],
+      "iou": 0.3556,
+      "mid_frame_hit": false,
+      "midpoint_error_sec": 0.45,
+      "pred_mid_frame": 131,
+      "inference_time_sec": 8.364
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_33",
+      "predicted_interval_sec": [
+        10.8,
+        12.2
+      ],
+      "predicted_interval_frames": [
+        162,
+        183
+      ],
+      "gt_interval_frames": [
+        174,
+        188
+      ],
+      "iou": 0.3462,
+      "mid_frame_hit": false,
+      "midpoint_error_sec": 0.5667,
+      "pred_mid_frame": 172,
+      "inference_time_sec": 9.151
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_34",
+      "predicted_interval_sec": [
+        8.5,
+        9.5
+      ],
+      "predicted_interval_frames": [
+        128,
+        142
+      ],
+      "gt_interval_frames": [
+        130,
+        136
+      ],
+      "iou": 0.4,
+      "mid_frame_hit": true,
+      "midpoint_error_sec": 0.1333,
+      "pred_mid_frame": 135,
+      "inference_time_sec": 7.941
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_35",
+      "predicted_interval_sec": [
+        8.0,
+        9.0
+      ],
+      "predicted_interval_frames": [
+        120,
+        135
+      ],
+      "gt_interval_frames": [
+        124,
+        140
+      ],
+      "iou": 0.55,
+      "mid_frame_hit": true,
+      "midpoint_error_sec": 0.3,
+      "pred_mid_frame": 128,
+      "inference_time_sec": 7.792
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_36",
+      "predicted_interval_sec": [
+        3.5,
+        4.5
+      ],
+      "predicted_interval_frames": [
+        52,
+        68
+      ],
+      "gt_interval_frames": [
+        52,
+        64
+      ],
+      "iou": 0.742,
+      "mid_frame_hit": true,
+      "midpoint_error_sec": 0.1333,
+      "pred_mid_frame": 60,
+      "inference_time_sec": 8.293
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_37",
+      "predicted_interval_sec": [
+        7.5,
+        9.0
+      ],
+      "predicted_interval_frames": [
+        112,
+        135
+      ],
+      "gt_interval_frames": [
+        128,
+        132
+      ],
+      "iou": 0.1778,
+      "mid_frame_hit": false,
+      "midpoint_error_sec": 0.4167,
+      "pred_mid_frame": 124,
+      "inference_time_sec": 9.027
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_38",
+      "predicted_interval_sec": [
+        9.5,
+        11.0
+      ],
+      "predicted_interval_frames": [
+        142,
+        165
+      ],
+      "gt_interval_frames": [
+        146,
+        172
+      ],
+      "iou": 0.6441,
+      "mid_frame_hit": true,
+      "midpoint_error_sec": 0.35,
+      "pred_mid_frame": 154,
+      "inference_time_sec": 7.983
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_39",
+      "predicted_interval_sec": [
+        4.5,
+        5.5
+      ],
+      "predicted_interval_frames": [
+        68,
+        82
+      ],
+      "gt_interval_frames": [
+        76,
+        84
+      ],
+      "iou": 0.3939,
+      "mid_frame_hit": false,
+      "midpoint_error_sec": 0.3333,
+      "pred_mid_frame": 75,
+      "inference_time_sec": 7.149
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_4",
+      "predicted_interval_sec": [
+        5.5,
+        6.5
+      ],
+      "predicted_interval_frames": [
+        82,
+        98
+      ],
+      "gt_interval_frames": [
+        89,
+        99
+      ],
+      "iou": 0.5152,
+      "mid_frame_hit": true,
+      "midpoint_error_sec": 0.2667,
+      "pred_mid_frame": 90,
+      "inference_time_sec": 7.477
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_40",
+      "predicted_interval_sec": [
+        6.0,
+        7.5
+      ],
+      "predicted_interval_frames": [
+        90,
+        112
+      ],
+      "gt_interval_frames": [
+        98,
+        112
+      ],
+      "iou": 0.6223,
+      "mid_frame_hit": true,
+      "midpoint_error_sec": 0.25,
+      "pred_mid_frame": 101,
+      "inference_time_sec": 7.098
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_41",
+      "predicted_interval_sec": [
+        5.5,
+        7.0
+      ],
+      "predicted_interval_frames": [
+        82,
+        105
+      ],
+      "gt_interval_frames": [
+        84,
+        90
+      ],
+      "iou": 0.2667,
+      "mid_frame_hit": false,
+      "midpoint_error_sec": 0.45,
+      "pred_mid_frame": 94,
+      "inference_time_sec": 8.225
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_42",
+      "predicted_interval_sec": [
+        5.5,
+        7.0
+      ],
+      "predicted_interval_frames": [
+        82,
+        105
+      ],
+      "gt_interval_frames": [
+        92,
+        98
+      ],
+      "iou": 0.2667,
+      "mid_frame_hit": true,
+      "midpoint_error_sec": 0.0833,
+      "pred_mid_frame": 94,
+      "inference_time_sec": 8.539
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_43",
+      "predicted_interval_sec": [
+        2.0,
+        3.0
+      ],
+      "predicted_interval_frames": [
+        30,
+        45
+      ],
+      "gt_interval_frames": [
+        42,
+        50
+      ],
+      "iou": 0.15,
+      "mid_frame_hit": false,
+      "midpoint_error_sec": 0.5667,
+      "pred_mid_frame": 38,
+      "inference_time_sec": 7.034
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_44",
+      "predicted_interval_sec": [
+        3.0,
+        4.0
+      ],
+      "predicted_interval_frames": [
+        45,
+        60
+      ],
+      "gt_interval_frames": [
+        54,
+        60
+      ],
+      "iou": 0.4,
+      "mid_frame_hit": false,
+      "midpoint_error_sec": 0.3,
+      "pred_mid_frame": 52,
+      "inference_time_sec": 8.334
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_45",
+      "predicted_interval_sec": [
+        8.0,
+        9.0
+      ],
+      "predicted_interval_frames": [
+        120,
+        135
+      ],
+      "gt_interval_frames": [
+        124,
+        138
+      ],
+      "iou": 0.6111,
+      "mid_frame_hit": true,
+      "midpoint_error_sec": 0.2333,
+      "pred_mid_frame": 128,
+      "inference_time_sec": 7.853
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_46",
+      "predicted_interval_sec": [
+        9.0,
+        10.0
+      ],
+      "predicted_interval_frames": [
+        135,
+        150
+      ],
+      "gt_interval_frames": [
+        142,
+        154
+      ],
+      "iou": 0.421,
+      "mid_frame_hit": true,
+      "midpoint_error_sec": 0.3667,
+      "pred_mid_frame": 142,
+      "inference_time_sec": 5.742
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_47",
+      "predicted_interval_sec": [
+        5.0,
+        6.0
+      ],
+      "predicted_interval_frames": [
+        75,
+        90
+      ],
+      "gt_interval_frames": [
+        80,
+        96
+      ],
+      "iou": 0.4762,
+      "mid_frame_hit": true,
+      "midpoint_error_sec": 0.3667,
+      "pred_mid_frame": 82,
+      "inference_time_sec": 8.595
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_48",
+      "predicted_interval_sec": [
+        3.0,
+        4.0
+      ],
+      "predicted_interval_frames": [
+        45,
+        60
+      ],
+      "gt_interval_frames": [
+        52,
+        66
+      ],
+      "iou": 0.3809,
+      "mid_frame_hit": true,
+      "midpoint_error_sec": 0.4333,
+      "pred_mid_frame": 52,
+      "inference_time_sec": 8.743
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_49",
+      "predicted_interval_sec": [
+        3.5,
+        4.5
+      ],
+      "predicted_interval_frames": [
+        52,
+        68
+      ],
+      "gt_interval_frames": [
+        56,
+        72
+      ],
+      "iou": 0.5898,
+      "mid_frame_hit": true,
+      "midpoint_error_sec": 0.2667,
+      "pred_mid_frame": 60,
+      "inference_time_sec": 6.684
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_5",
+      "predicted_interval_sec": [
+        4.5,
+        5.5
+      ],
+      "predicted_interval_frames": [
+        68,
+        82
+      ],
+      "gt_interval_frames": [
+        71,
+        82
+      ],
+      "iou": 0.7334,
+      "mid_frame_hit": true,
+      "midpoint_error_sec": 0.1,
+      "pred_mid_frame": 75,
+      "inference_time_sec": 6.997
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_50",
+      "predicted_interval_sec": [
+        5.0,
+        6.0
+      ],
+      "predicted_interval_frames": [
+        75,
+        90
+      ],
+      "gt_interval_frames": [
+        86,
+        96
+      ],
+      "iou": 0.1905,
+      "mid_frame_hit": false,
+      "midpoint_error_sec": 0.5667,
+      "pred_mid_frame": 82,
+      "inference_time_sec": 7.471
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_51",
+      "predicted_interval_sec": [
+        4.0,
+        5.0
+      ],
+      "predicted_interval_frames": [
+        60,
+        75
+      ],
+      "gt_interval_frames": [
+        70,
+        78
+      ],
+      "iou": 0.2778,
+      "mid_frame_hit": false,
+      "midpoint_error_sec": 0.4333,
+      "pred_mid_frame": 68,
+      "inference_time_sec": 9.315
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_52",
+      "predicted_interval_sec": [
+        9.0,
+        10.0
+      ],
+      "predicted_interval_frames": [
+        135,
+        150
+      ],
+      "gt_interval_frames": [
+        146,
+        150
+      ],
+      "iou": 0.2667,
+      "mid_frame_hit": false,
+      "midpoint_error_sec": 0.3667,
+      "pred_mid_frame": 142,
+      "inference_time_sec": 11.603
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_53",
+      "predicted_interval_sec": [
+        3.5,
+        4.5
+      ],
+      "predicted_interval_frames": [
+        52,
+        68
+      ],
+      "gt_interval_frames": [
+        58,
+        66
+      ],
+      "iou": 0.5333,
+      "mid_frame_hit": true,
+      "midpoint_error_sec": 0.1333,
+      "pred_mid_frame": 60,
+      "inference_time_sec": 6.993
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_54",
+      "predicted_interval_sec": [
+        4.0,
+        5.5
+      ],
+      "predicted_interval_frames": [
+        60,
+        82
+      ],
+      "gt_interval_frames": [
+        68,
+        80
+      ],
+      "iou": 0.5333,
+      "mid_frame_hit": true,
+      "midpoint_error_sec": 0.1833,
+      "pred_mid_frame": 71,
+      "inference_time_sec": 7.806
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_55",
+      "predicted_interval_sec": [
+        5.0,
+        6.0
+      ],
+      "predicted_interval_frames": [
+        75,
+        90
+      ],
+      "gt_interval_frames": [
+        82,
+        94
+      ],
+      "iou": 0.421,
+      "mid_frame_hit": true,
+      "midpoint_error_sec": 0.3667,
+      "pred_mid_frame": 82,
+      "inference_time_sec": 8.826
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_56",
+      "predicted_interval_sec": [
+        5.0,
+        6.0
+      ],
+      "predicted_interval_frames": [
+        75,
+        90
+      ],
+      "gt_interval_frames": [
+        72,
+        86
+      ],
+      "iou": 0.6111,
+      "mid_frame_hit": true,
+      "midpoint_error_sec": 0.2333,
+      "pred_mid_frame": 82,
+      "inference_time_sec": 7.999
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_57",
+      "predicted_interval_sec": [
+        2.5,
+        3.5
+      ],
+      "predicted_interval_frames": [
+        38,
+        52
+      ],
+      "gt_interval_frames": [
+        42,
+        44
+      ],
+      "iou": 0.1333,
+      "mid_frame_hit": false,
+      "midpoint_error_sec": 0.1333,
+      "pred_mid_frame": 45,
+      "inference_time_sec": 8.583
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_58",
+      "predicted_interval_sec": [
+        7.0,
+        8.0
+      ],
+      "predicted_interval_frames": [
+        105,
+        120
+      ],
+      "gt_interval_frames": [
+        108,
+        122
+      ],
+      "iou": 0.7059,
+      "mid_frame_hit": true,
+      "midpoint_error_sec": 0.1667,
+      "pred_mid_frame": 112,
+      "inference_time_sec": 8.406
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_59",
+      "predicted_interval_sec": [
+        4.5,
+        5.5
+      ],
+      "predicted_interval_frames": [
+        68,
+        82
+      ],
+      "gt_interval_frames": [
+        66,
+        84
+      ],
+      "iou": 0.8333,
+      "mid_frame_hit": true,
+      "midpoint_error_sec": 0.0,
+      "pred_mid_frame": 75,
+      "inference_time_sec": 7.407
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_6",
+      "predicted_interval_sec": [
+        2.5,
+        3.5
+      ],
+      "predicted_interval_frames": [
+        38,
+        52
+      ],
+      "gt_interval_frames": [
+        49,
+        55
+      ],
+      "iou": 0.2,
+      "mid_frame_hit": false,
+      "midpoint_error_sec": 0.4667,
+      "pred_mid_frame": 45,
+      "inference_time_sec": 7.806
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_60",
+      "predicted_interval_sec": [
+        4.5,
+        6.0
+      ],
+      "predicted_interval_frames": [
+        68,
+        90
+      ],
+      "gt_interval_frames": [
+        70,
+        90
+      ],
+      "iou": 0.8889,
+      "mid_frame_hit": true,
+      "midpoint_error_sec": 0.0833,
+      "pred_mid_frame": 79,
+      "inference_time_sec": 7.001
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_61",
+      "predicted_interval_sec": [
+        4.0,
+        5.0
+      ],
+      "predicted_interval_frames": [
+        60,
+        75
+      ],
+      "gt_interval_frames": [
+        68,
+        72
+      ],
+      "iou": 0.2667,
+      "mid_frame_hit": true,
+      "midpoint_error_sec": 0.1667,
+      "pred_mid_frame": 68,
+      "inference_time_sec": 6.992
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_62",
+      "predicted_interval_sec": [
+        6.5,
+        7.5
+      ],
+      "predicted_interval_frames": [
+        98,
+        112
+      ],
+      "gt_interval_frames": [
+        108,
+        114
+      ],
+      "iou": 0.2727,
+      "mid_frame_hit": false,
+      "midpoint_error_sec": 0.4,
+      "pred_mid_frame": 105,
+      "inference_time_sec": 6.657
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_63",
+      "predicted_interval_sec": [
+        5.0,
+        6.0
+      ],
+      "predicted_interval_frames": [
+        75,
+        90
+      ],
+      "gt_interval_frames": [
+        82,
+        86
+      ],
+      "iou": 0.2666,
+      "mid_frame_hit": true,
+      "midpoint_error_sec": 0.1,
+      "pred_mid_frame": 82,
+      "inference_time_sec": 8.053
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_64",
+      "predicted_interval_sec": [
+        2.0,
+        3.0
+      ],
+      "predicted_interval_frames": [
+        30,
+        45
+      ],
+      "gt_interval_frames": [
+        36,
+        42
+      ],
+      "iou": 0.4,
+      "mid_frame_hit": true,
+      "midpoint_error_sec": 0.1,
+      "pred_mid_frame": 38,
+      "inference_time_sec": 6.177
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_65",
+      "predicted_interval_sec": [
+        6.0,
+        6.5
+      ],
+      "predicted_interval_frames": [
+        90,
+        98
+      ],
+      "gt_interval_frames": [
+        96,
+        102
+      ],
+      "iou": 0.125,
+      "mid_frame_hit": false,
+      "midpoint_error_sec": 0.35,
+      "pred_mid_frame": 94,
+      "inference_time_sec": 8.284
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_66",
+      "predicted_interval_sec": [
+        10.5,
+        11.5
+      ],
+      "predicted_interval_frames": [
+        158,
+        172
+      ],
+      "gt_interval_frames": [
+        164,
+        174
+      ],
+      "iou": 0.5152,
+      "mid_frame_hit": true,
+      "midpoint_error_sec": 0.2667,
+      "pred_mid_frame": 165,
+      "inference_time_sec": 11.725
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_67",
+      "predicted_interval_sec": [
+        2.5,
+        3.5
+      ],
+      "predicted_interval_frames": [
+        38,
+        52
+      ],
+      "gt_interval_frames": [
+        48,
+        56
+      ],
+      "iou": 0.2432,
+      "mid_frame_hit": false,
+      "midpoint_error_sec": 0.4667,
+      "pred_mid_frame": 45,
+      "inference_time_sec": 6.8
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_68",
+      "predicted_interval_sec": [
+        3.8,
+        4.8
+      ],
+      "predicted_interval_frames": [
+        57,
+        72
+      ],
+      "gt_interval_frames": [
+        62,
+        64
+      ],
+      "iou": 0.1334,
+      "mid_frame_hit": true,
+      "midpoint_error_sec": 0.1,
+      "pred_mid_frame": 64,
+      "inference_time_sec": 10.347
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_69",
+      "predicted_interval_sec": [
+        4.5,
+        5.5
+      ],
+      "predicted_interval_frames": [
+        68,
+        82
+      ],
+      "gt_interval_frames": [
+        72,
+        82
+      ],
+      "iou": 0.6667,
+      "mid_frame_hit": true,
+      "midpoint_error_sec": 0.1333,
+      "pred_mid_frame": 75,
+      "inference_time_sec": 11.918
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_7",
+      "predicted_interval_sec": [
+        2.5,
+        4.0
+      ],
+      "predicted_interval_frames": [
+        38,
+        60
+      ],
+      "gt_interval_frames": [
+        38,
+        60
+      ],
+      "iou": 0.9778,
+      "mid_frame_hit": true,
+      "midpoint_error_sec": 0.0167,
+      "pred_mid_frame": 49,
+      "inference_time_sec": 7.492
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_70",
+      "predicted_interval_sec": [
+        5.5,
+        6.5
+      ],
+      "predicted_interval_frames": [
+        82,
+        98
+      ],
+      "gt_interval_frames": [
+        88,
+        92
+      ],
+      "iou": 0.2666,
+      "mid_frame_hit": true,
+      "midpoint_error_sec": 0.0,
+      "pred_mid_frame": 90,
+      "inference_time_sec": 5.187
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_71",
+      "predicted_interval_sec": [
+        2.5,
+        3.5
+      ],
+      "predicted_interval_frames": [
+        38,
+        52
+      ],
+      "gt_interval_frames": [
+        40,
+        52
+      ],
+      "iou": 0.8,
+      "mid_frame_hit": true,
+      "midpoint_error_sec": 0.0667,
+      "pred_mid_frame": 45,
+      "inference_time_sec": 6.185
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_72",
+      "predicted_interval_sec": [
+        9.5,
+        10.5
+      ],
+      "predicted_interval_frames": [
+        142,
+        158
+      ],
+      "gt_interval_frames": [
+        150,
+        154
+      ],
+      "iou": 0.2667,
+      "mid_frame_hit": true,
+      "midpoint_error_sec": 0.1333,
+      "pred_mid_frame": 150,
+      "inference_time_sec": 6.744
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_73",
+      "predicted_interval_sec": [
+        1.5,
+        2.5
+      ],
+      "predicted_interval_frames": [
+        22,
+        38
+      ],
+      "gt_interval_frames": [
+        28,
+        32
+      ],
+      "iou": 0.2666,
+      "mid_frame_hit": true,
+      "midpoint_error_sec": 0.0,
+      "pred_mid_frame": 30,
+      "inference_time_sec": 9.227
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_74",
+      "predicted_interval_sec": [
+        2.5,
+        3.5
+      ],
+      "predicted_interval_frames": [
+        38,
+        52
+      ],
+      "gt_interval_frames": [
+        50,
+        58
+      ],
+      "iou": 0.122,
+      "mid_frame_hit": false,
+      "midpoint_error_sec": 0.6,
+      "pred_mid_frame": 45,
+      "inference_time_sec": 6.89
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_75",
+      "predicted_interval_sec": [
+        2.0,
+        3.0
+      ],
+      "predicted_interval_frames": [
+        30,
+        45
+      ],
+      "gt_interval_frames": [
+        36,
+        44
+      ],
+      "iou": 0.5333,
+      "mid_frame_hit": true,
+      "midpoint_error_sec": 0.1667,
+      "pred_mid_frame": 38,
+      "inference_time_sec": 8.306
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_76",
+      "predicted_interval_sec": [
+        1.5,
+        2.5
+      ],
+      "predicted_interval_frames": [
+        22,
+        38
+      ],
+      "gt_interval_frames": [
+        32,
+        38
+      ],
+      "iou": 0.3549,
+      "mid_frame_hit": false,
+      "midpoint_error_sec": 0.3333,
+      "pred_mid_frame": 30,
+      "inference_time_sec": 6.903
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_77",
+      "predicted_interval_sec": [
+        2.5,
+        4.0
+      ],
+      "predicted_interval_frames": [
+        38,
+        60
+      ],
+      "gt_interval_frames": [
+        44,
+        54
+      ],
+      "iou": 0.4445,
+      "mid_frame_hit": true,
+      "midpoint_error_sec": 0.0167,
+      "pred_mid_frame": 49,
+      "inference_time_sec": 7.508
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_78",
+      "predicted_interval_sec": [
+        7.0,
+        8.5
+      ],
+      "predicted_interval_frames": [
+        105,
+        128
+      ],
+      "gt_interval_frames": [
+        112,
+        130
+      ],
+      "iou": 0.62,
+      "mid_frame_hit": true,
+      "midpoint_error_sec": 0.3167,
+      "pred_mid_frame": 116,
+      "inference_time_sec": 7.993
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_79",
+      "predicted_interval_sec": [
+        6.5,
+        7.5
+      ],
+      "predicted_interval_frames": [
+        98,
+        112
+      ],
+      "gt_interval_frames": [
+        102,
+        110
+      ],
+      "iou": 0.5333,
+      "mid_frame_hit": true,
+      "midpoint_error_sec": 0.0667,
+      "pred_mid_frame": 105,
+      "inference_time_sec": 6.57
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_8",
+      "predicted_interval_sec": [
+        3.5,
+        4.5
+      ],
+      "predicted_interval_frames": [
+        52,
+        68
+      ],
+      "gt_interval_frames": [
+        52,
+        63
+      ],
+      "iou": 0.6774,
+      "mid_frame_hit": true,
+      "midpoint_error_sec": 0.1667,
+      "pred_mid_frame": 60,
+      "inference_time_sec": 7.101
+    },
+    {
+      "episode": "2f_store_dongjun_setup_single_object_pickup_9",
+      "predicted_interval_sec": [
+        7.5,
+        9.0
+      ],
+      "predicted_interval_frames": [
+        112,
+        135
+      ],
+      "gt_interval_frames": [
+        122,
+        128
+      ],
+      "iou": 0.2667,
+      "mid_frame_hit": true,
+      "midpoint_error_sec": 0.0833,
+      "pred_mid_frame": 124,
+      "inference_time_sec": 6.797
+    }
+  ],
+  "aggregate": {
+    "num_episodes": 79,
+    "num_success": 79,
+    "num_failures": 0,
+    "mid_frame_accuracy": {
+      "hits": 58,
+      "total": 79,
+      "rate": 0.7342
+    },
+    "nearest_gt_dist": {
+      "mean": 1.4177,
+      "median": 0,
+      "std": 5.4269
+    },
+    "frame_hit@0": {
+      "hits": 58,
+      "total": 79,
+      "rate": 0.7342
+    },
+    "frame_hit@1": {
+      "hits": 60,
+      "total": 79,
+      "rate": 0.7595
+    },
+    "frame_hit@3": {
+      "hits": 68,
+      "total": 79,
+      "rate": 0.8608
+    },
+    "frame_hit@5": {
+      "hits": 77,
+      "total": 79,
+      "rate": 0.9747
+    },
+    "iou": {
+      "mean": 0.4461,
+      "median": 0.421,
+      "std": 0.2098
+    },
+    "midpoint_error": {
+      "mean": 0.273,
+      "median": 0.2,
+      "std": 0.3875
+    },
+    "gt_coverage": {
+      "mean": 0.862,
+      "median": 1.0,
+      "std": 0.2107
+    },
+    "pred_precision": {
+      "mean": 0.4842,
+      "median": 0.5,
+      "std": 0.2274
+    },
+    "start_error": {
+      "mean": 0.4781,
+      "median": 0.4333,
+      "std": 0.4075
+    },
+    "end_error": {
+      "mean": 0.2637,
+      "median": 0.2,
+      "std": 0.3908
+    },
+    "boundary_error": {
+      "mean": 0.3709,
+      "median": 0.3333,
+      "std": 0.3694
+    },
+    "hit@0.5s": {
+      "hits": 74,
+      "total": 79,
+      "rate": 0.9367
+    },
+    "hit@1.0s": {
+      "hits": 78,
+      "total": 79,
+      "rate": 0.9873
+    },
+    "hit@1.5s": {
+      "hits": 78,
+      "total": 79,
+      "rate": 0.9873
+    },
+    "total_cost_usd": 0.3911,
+    "total_input_tokens": 112472,
+    "total_output_tokens": 7050,
+    "total_thinking_tokens": 49842
+  }
+}
