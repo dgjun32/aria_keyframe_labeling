@@ -3,9 +3,10 @@
 preprocess.py -- Convert VRS files to preprocessed modalities.
 
 Usage:
-    python preprocess.py [--vrs-dir VRS_DIR] [--out-dir OUT_DIR]
+    python preprocess.py [--vrs-dir VRS_DIR] [--vrs-file VRS_FILE] [--out-dir OUT_DIR]
 
 Processes all .vrs files in VRS_DIR (default: ./vrs_files/).
+If --vrs-file is provided, process only that single VRS file.
 Outputs go to OUT_DIR (default: ./preproc_files/).
 Already-processed files are skipped (idempotent).
 
@@ -228,16 +229,40 @@ def main():
         "--out-dir", default="./preproc_files",
         help="Output directory (default: ./preproc_files)",
     )
+    parser.add_argument(
+        "--vrs-file", default=None,
+        help=(
+            "Process only one VRS file. Accepts: absolute path, relative path, "
+            "or filename inside --vrs-dir."
+        ),
+    )
     args = parser.parse_args()
 
     os.makedirs(args.out_dir, exist_ok=True)
 
-    vrs_files = sorted(glob.glob(os.path.join(args.vrs_dir, "*.vrs")))
-    if not vrs_files:
-        print(f"No .vrs files found in {args.vrs_dir}")
-        sys.exit(0)
-
-    print(f"Found {len(vrs_files)} VRS file(s) in {args.vrs_dir}")
+    if args.vrs_file:
+        candidate_paths = [
+            args.vrs_file,
+            os.path.join(args.vrs_dir, args.vrs_file),
+        ]
+        resolved_vrs = next((p for p in candidate_paths if os.path.exists(p)), None)
+        if resolved_vrs is None:
+            print(
+                f"[ERROR] --vrs-file not found: {args.vrs_file} "
+                f"(also checked under {args.vrs_dir})"
+            )
+            sys.exit(1)
+        if not resolved_vrs.endswith(".vrs"):
+            print(f"[ERROR] --vrs-file must point to a .vrs file: {resolved_vrs}")
+            sys.exit(1)
+        vrs_files = [resolved_vrs]
+        print(f"Using single VRS file: {resolved_vrs}")
+    else:
+        vrs_files = sorted(glob.glob(os.path.join(args.vrs_dir, "*.vrs")))
+        if not vrs_files:
+            print(f"No .vrs files found in {args.vrs_dir}")
+            sys.exit(0)
+        print(f"Found {len(vrs_files)} VRS file(s) in {args.vrs_dir}")
 
     # Load gaze model ONCE
     device = "cuda" if torch.cuda.is_available() else "cpu"

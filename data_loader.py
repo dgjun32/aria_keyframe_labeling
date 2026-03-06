@@ -10,6 +10,7 @@ import json
 import re
 import cv2
 import numpy as np
+import soundfile as sf
 from scipy.signal import savgol_filter
 from pathlib import Path
 
@@ -17,20 +18,25 @@ from pathlib import Path
 def compute_angular_velocity(pitch_yaw: np.ndarray, fps: float,
                              savgol_window: int = 11,
                              savgol_poly: int = 2) -> np.ndarray:
-    """Compute gaze angular velocity (deg/s) from pitch/yaw data.
+    """Compute frame-aligned gaze angular velocity (deg/s) from pitch/yaw.
 
     Args:
         pitch_yaw: (T, 6) array. Column 0 = pitch, column 3 = yaw (radians).
         fps: frames per second.
     Returns:
-        (T,) array of angular velocity in deg/s.
+        (T,) array of angular velocity in deg/s aligned to each frame.
     """
     pitch = pitch_yaw[:, 0]
     yaw = pitch_yaw[:, 3]
 
     T = len(pitch)
+    if T <= 1 or fps <= 0:
+        return np.zeros(T, dtype=np.float64)
+
     if T < savgol_window:
         savgol_window = max(T | 1, 3)  # ensure odd and >= 3
+    if savgol_poly >= savgol_window:
+        savgol_poly = savgol_window - 1
 
     pitch_s = savgol_filter(pitch, savgol_window, savgol_poly)
     yaw_s = savgol_filter(yaw, savgol_window, savgol_poly)
@@ -40,11 +46,26 @@ def compute_angular_velocity(pitch_yaw: np.ndarray, fps: float,
     y = np.cos(pitch_s) * np.sin(yaw_s)
     z = np.sin(pitch_s)
 
-    # Angular distance between consecutive frames (radians)
-    dot = np.clip(x[:-1] * x[1:] + y[:-1] * y[1:] + z[:-1] * z[1:], -1.0, 1.0)
-    angular_dist = np.arccos(dot) * fps  # rad/s
+    # Use centered differences so velocity[i] is aligned to frame i.
+    step_dot = np.clip(
+        x[:-1] * x[1:] + y[:-1] * y[1:] + z[:-1] * z[1:],
+        -1.0,
+        1.0,
+    )
+    step_velocity = np.arccos(step_dot) * fps  # rad/s over 1 frame
 
-    angular_velocity = np.concatenate([[0.0], angular_dist])
+    angular_velocity = np.zeros(T, dtype=np.float64)
+    angular_velocity[0] = step_velocity[0]
+    angular_velocity[-1] = step_velocity[-1]
+
+    if T > 2:
+        center_dot = np.clip(
+            x[:-2] * x[2:] + y[:-2] * y[2:] + z[:-2] * z[2:],
+            -1.0,
+            1.0,
+        )
+        angular_velocity[1:-1] = np.arccos(center_dot) * (fps / 2.0)
+
     return np.rad2deg(angular_velocity)
 
 
@@ -83,6 +104,7 @@ class TaskData:
         self.angular_velocity_deg: np.ndarray | None = None  # (T,)
         self.time_axis: np.ndarray | None = None       # (T,)
         self.transcript: list[dict] | None = None      # word-level
+        self.audio_energy: np.ndarray | None = None    # (T,)
 
     def _path(self, suffix: str) -> str:
         return os.path.join(self.base_dir, f"{self.task_name}{suffix}")
@@ -125,6 +147,35 @@ class TaskData:
             with open(transcript_path) as f:
                 data = json.load(f)
             self.transcript = data.get("words", [])
+
+        # Audio energy envelope (aligned to frames)
+        audio_path = self._path("_audio.wav")
+        if os.path.exists(audio_path) and self.total_frames > 0 and self.fps > 0:
+            try:
+                audio, sr = sf.read(audio_path)
+                if audio.ndim == 2:
+                    # Mix down channels for a single envelope.
+                    audio = np.mean(audio, axis=1)
+                audio = np.abs(audio.astype(np.float32))
+
+                samples_per_frame = sr / self.fps
+                envelope = np.zeros(self.total_frames, dtype=np.float32)
+                n = len(audio)
+                for i in range(self.total_frames):
+                    s = int(i * samples_per_frame)
+                    e = int((i + 1) * samples_per_frame)
+                    if s >= n:
+                        break
+                    e = min(e, n)
+                    if e > s:
+                        envelope[i] = float(np.mean(audio[s:e]))
+
+                max_v = float(envelope.max()) if envelope.size else 0.0
+                if max_v > 1e-8:
+                    envelope /= max_v
+                self.audio_energy = envelope
+            except Exception:
+                self.audio_energy = None
 
     def read_frame(self, idx: int) -> np.ndarray | None:
         """Read a specific frame (returns RGB numpy array or None)."""

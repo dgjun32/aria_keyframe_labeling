@@ -64,15 +64,17 @@ def compute_angular_velocity_deg(
     savgol_window: int = 11,
     savgol_poly: int = 2,
 ) -> np.ndarray:
-    """Compute gaze angular velocity in deg/s from pitch/yaw (radians).
+    """Compute frame-aligned gaze angular velocity in deg/s.
 
     Pipeline:
       1. Savitzky-Golay smooth pitch & yaw
       2. Convert to 3D unit vectors on the unit sphere
-      3. Angular distance between consecutive frames
-      4. Multiply by fps -> deg/s
+      3. Centered angular difference so velocity[i] aligns to frame i
+      4. One-sided differences on the first/last frame
     """
     T = len(pitch)
+    if T <= 1 or fps <= 0:
+        return np.zeros(T, dtype=np.float64)
 
     win = savgol_window
     if win % 2 == 0:
@@ -89,12 +91,24 @@ def compute_angular_velocity_deg(
     y = np.cos(pitch_s) * np.sin(yaw_s)
     z = np.sin(pitch_s)
 
-    dot = np.clip(
+    step_dot = np.clip(
         x[:-1] * x[1:] + y[:-1] * y[1:] + z[:-1] * z[1:],
         -1.0, 1.0,
     )
-    angular_dist = np.arccos(dot) * fps  # rad/s
-    angular_velocity = np.concatenate([[0.0], angular_dist])
+    step_velocity = np.arccos(step_dot) * fps  # rad/s over 1 frame
+
+    angular_velocity = np.zeros(T, dtype=np.float64)
+    angular_velocity[0] = step_velocity[0]
+    angular_velocity[-1] = step_velocity[-1]
+
+    if T > 2:
+        center_dot = np.clip(
+            x[:-2] * x[2:] + y[:-2] * y[2:] + z[:-2] * z[2:],
+            -1.0,
+            1.0,
+        )
+        angular_velocity[1:-1] = np.arccos(center_dot) * (fps / 2.0)
+
     return np.rad2deg(angular_velocity)
 
 

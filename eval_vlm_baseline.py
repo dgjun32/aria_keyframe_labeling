@@ -55,6 +55,64 @@ PRICING = {
     }
 }
 
+
+def _load_dotenv_map(dotenv_path: str) -> dict[str, str]:
+    """Parse a simple .env file without requiring python-dotenv."""
+    values: dict[str, str] = {}
+    if not os.path.exists(dotenv_path):
+        return values
+
+    with open(dotenv_path) as f:
+        for raw_line in f:
+            line = raw_line.strip()
+            if not line or line.startswith("#"):
+                continue
+            if line.startswith("export "):
+                line = line[len("export "):].strip()
+            if "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            key = key.strip()
+            value = value.strip()
+            if not key:
+                continue
+            if len(value) >= 2 and value[0] == value[-1] and value[0] in ("'", '"'):
+                value = value[1:-1]
+            values[key] = value
+    return values
+
+
+def resolve_gemini_api_key(cli_api_key: str | None) -> str:
+    """Resolve Gemini API key from CLI arg, env vars, or local .env file."""
+    if cli_api_key:
+        return cli_api_key
+
+    for env_name in ("GEMINI_API_KEY", "GOOGLE_API_KEY"):
+        env_value = os.environ.get(env_name)
+        if env_value:
+            return env_value
+
+    dotenv_candidates = [
+        os.path.join(os.getcwd(), ".env"),
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env"),
+    ]
+    seen: set[str] = set()
+    for dotenv_path in dotenv_candidates:
+        if dotenv_path in seen:
+            continue
+        seen.add(dotenv_path)
+        dotenv_map = _load_dotenv_map(dotenv_path)
+        for env_name in ("GEMINI_API_KEY", "GOOGLE_API_KEY"):
+            env_value = dotenv_map.get(env_name)
+            if env_value:
+                os.environ.setdefault(env_name, env_value)
+                return env_value
+
+    raise ValueError(
+        "No Gemini API key found. Pass --api-key, export GEMINI_API_KEY, "
+        "or put GEMINI_API_KEY in a local .env file."
+    )
+
 PROMPT_TEMPLATE = """\
 You are analyzing a first-person (egocentric) video recorded in a store.
 The wearer is looking at items on shelves and interacts with a specific object.
@@ -322,12 +380,68 @@ def prepare_video(
 #  GROUND TRUTH
 # ══════════════════════════════════════════════════════════════════════════
 def load_ground_truth(episode_dir: str) -> dict | None:
-    """Load labels.npy → extract keyframe segment and per-frame labels."""
+    """Load GT labels (labels.npy preferred, annotations.json fallback)."""
     labels_path = os.path.join(episode_dir, "labels.npy")
-    if not os.path.exists(labels_path):
+    labels: np.ndarray | None = None
+
+    if os.path.exists(labels_path):
+        labels = np.load(labels_path).astype(np.int8)
+    else:
+        ann_path = os.path.join(episode_dir, "annotations.json")
+        if os.path.exists(ann_path):
+            try:
+                with open(ann_path) as f:
+                    ann_data = json.load(f)
+                anns = ann_data.get("annotations", [])
+                if not isinstance(anns, list):
+                    anns = []
+
+                video_path = os.path.join(episode_dir, "video.mp4")
+                total_frames = 0
+                if os.path.exists(video_path):
+                    cap = cv2.VideoCapture(video_path)
+                    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+                    cap.release()
+
+                if total_frames <= 0:
+                    max_end = -1
+                    for ann in anns:
+                        if not isinstance(ann, dict):
+                            continue
+                        end = ann.get("end_frame", ann.get("end", -1))
+                        try:
+                            end = int(end)
+                        except (TypeError, ValueError):
+                            continue
+                        max_end = max(max_end, end)
+                    total_frames = max_end + 1 if max_end >= 0 else 0
+
+                if total_frames > 0:
+                    labels = np.zeros(total_frames, dtype=np.int8)
+                    for ann in anns:
+                        if not isinstance(ann, dict):
+                            continue
+                        s = ann.get("start_frame", ann.get("start", -1))
+                        e = ann.get("end_frame", ann.get("end", -1))
+                        try:
+                            s = int(s)
+                            e = int(e)
+                        except (TypeError, ValueError):
+                            continue
+                        if e < s:
+                            s, e = e, s
+                        if s < 0:
+                            continue
+                        s = max(0, min(total_frames - 1, s))
+                        e = max(0, min(total_frames - 1, e))
+                        if e >= s:
+                            labels[s:e + 1] = 1
+            except Exception:
+                labels = None
+
+    if labels is None:
         return None
 
-    labels = np.load(labels_path).astype(np.int8)
     T = len(labels)
 
     # Find contiguous segment boundaries
@@ -726,7 +840,7 @@ def main():
                              "Resize happens BEFORE overlays so text stays crisp.")
     parser.add_argument("--api-key",
                         default="",
-                        help="Gemini API key (required)")
+                        help="Gemini API key (optional if GEMINI_API_KEY or .env is set)")
     parser.add_argument("--debug", action="store_true",
                         help="Save VLM input videos to debug/{config_name}/")
     parser.add_argument("--verbose", action="store_true")
@@ -790,7 +904,8 @@ def main():
         print(f"[resume] {len(completed)} episodes already done")
 
     # ── Gemini client ──
-    client = genai.Client(api_key=args.api_key)
+    api_key = resolve_gemini_api_key(args.api_key)
+    client = genai.Client(api_key=api_key)
 
     all_results: list[dict] = []
 
@@ -801,6 +916,12 @@ def main():
             continue
 
         ep_dir = os.path.join(dataset_dir, ep_name)
+        if not os.path.isdir(ep_dir):
+            print(
+                f"  [{i+1}/{len(episode_names)}] {ep_name}: "
+                "SKIP (missing episode directory)"
+            )
+            continue
 
         # Load ground truth
         gt = load_ground_truth(ep_dir)

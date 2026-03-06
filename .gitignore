@@ -2,6 +2,11 @@
 dataset/
 vrs_files/
 preproc_files/
+dataset/
+eval_results_multiseg/
+backup/
+debug/
+results/
 
 # Large files
 *.zip
@@ -15,6 +20,7 @@ __pycache__/
 
 # macOS
 .DS_Store
+.env
 
 # Model checkpoints (optional - uncomment if you don't want to track these)
 # model/checkpoints/
