@@ -120,6 +120,8 @@ class LabelerApp:
         self.naming_mode = "task_name"  # task_name | prefix_index
         self.export_dir = DATASET_DIR
         self.video_scale = 60  # percent
+        self.angular_savgol_window = 11
+        self.angular_savgol_poly = 2
         self.task_names = self._sort_task_names(discover_tasks(PREPROC_DIR))
         self.task_idx = 0
         self.task_data: TaskData | None = None
@@ -151,6 +153,7 @@ class LabelerApp:
         self._updating_offset_ui = False
         self._updating_export_ui = False
         self._updating_scale_ui = False
+        self._updating_smoothing_ui = False
         self._updating_label_list = False
         self._switching_task = False
 
@@ -215,6 +218,12 @@ class LabelerApp:
                     self.export_dir = raw.get("export_dir", self.export_dir) or self.export_dir
                     self.naming_mode = raw.get("naming_mode", self.naming_mode) or self.naming_mode
                     self.video_scale = int(raw.get("video_scale", self.video_scale))
+                    self.angular_savgol_window = int(
+                        raw.get("angular_savgol_window", self.angular_savgol_window)
+                    )
+                    self.angular_savgol_poly = int(
+                        raw.get("angular_savgol_poly", self.angular_savgol_poly)
+                    )
                     file_prefix = raw.get("prefix", "")
                     if isinstance(file_prefix, str):
                         self.prefix = file_prefix or self.prefix
@@ -228,6 +237,7 @@ class LabelerApp:
         if not self.prefix:
             self.prefix = self._infer_default_prefix()
         self.video_scale = max(40, min(80, int(self.video_scale)))
+        self._normalize_smoothing_settings()
 
     def _save_export_settings(self):
         os.makedirs(os.path.dirname(EXPORT_SETTINGS_PATH), exist_ok=True)
@@ -238,10 +248,45 @@ class LabelerApp:
                     "naming_mode": self.naming_mode,
                     "prefix": self.prefix,
                     "video_scale": self.video_scale,
+                    "angular_savgol_window": self.angular_savgol_window,
+                    "angular_savgol_poly": self.angular_savgol_poly,
                 },
                 f,
                 indent=2,
             )
+
+    def _normalize_smoothing_settings(self):
+        try:
+            window = int(self.angular_savgol_window)
+        except (TypeError, ValueError):
+            window = 11
+        try:
+            poly = int(self.angular_savgol_poly)
+        except (TypeError, ValueError):
+            poly = 2
+
+        window = max(1, min(31, window))
+        if window > 1 and window % 2 == 0:
+            window += 1
+            if window > 31:
+                window = 29
+
+        poly = max(0, min(7, poly))
+        if window <= 1:
+            poly = 0
+        else:
+            poly = min(poly, window - 1)
+
+        self.angular_savgol_window = window
+        self.angular_savgol_poly = poly
+
+    def _smoothing_status_text(self) -> str:
+        if self.angular_savgol_window <= 1:
+            return "Angular smoothing: off"
+        return (
+            f"Angular smoothing: SG window {self.angular_savgol_window}, "
+            f"poly {self.angular_savgol_poly}"
+        )
 
     def _task_user_name(self, task_name: str) -> str:
         meta = self._parse_task_metadata(task_name)
@@ -857,6 +902,55 @@ class LabelerApp:
         )
         self.video_scale_slider.pack(anchor="w", padx=8, pady=(0, 8))
 
+        smoothing_grid = tk.Frame(view_card, bg="#252526")
+        smoothing_grid.pack(fill=tk.X, padx=8, pady=(0, 4))
+        tk.Label(smoothing_grid, text="Ang vel SG", bg="#252526", fg="#aaaaaa",
+                 font=("Helvetica", 10)).grid(row=0, column=0, sticky="w")
+        tk.Label(smoothing_grid, text="Window", bg="#252526", fg="#8fb8ff",
+                 font=("Courier", 9)).grid(row=1, column=0, sticky="w", pady=(4, 0))
+        tk.Label(smoothing_grid, text="Poly", bg="#252526", fg="#8fb8ff",
+                 font=("Courier", 9)).grid(row=1, column=2, sticky="w", padx=(10, 0), pady=(4, 0))
+
+        self.savgol_window_var = tk.StringVar(value=str(self.angular_savgol_window))
+        self.savgol_poly_var = tk.StringVar(value=str(self.angular_savgol_poly))
+        self.savgol_window_combo = ttk.Combobox(
+            smoothing_grid,
+            textvariable=self.savgol_window_var,
+            values=[str(v) for v in range(1, 32, 2)],
+            state="readonly",
+            width=5,
+        )
+        self.savgol_window_combo.grid(row=1, column=1, sticky="w", padx=(6, 0), pady=(4, 0))
+        self.savgol_window_combo.bind("<<ComboboxSelected>>", self._on_smoothing_change)
+
+        self.savgol_poly_combo = ttk.Combobox(
+            smoothing_grid,
+            textvariable=self.savgol_poly_var,
+            values=[str(v) for v in range(0, 8)],
+            state="readonly",
+            width=4,
+        )
+        self.savgol_poly_combo.grid(row=1, column=3, sticky="w", padx=(6, 0), pady=(4, 0))
+        self.savgol_poly_combo.bind("<<ComboboxSelected>>", self._on_smoothing_change)
+
+        self.savgol_hint_label = tk.Label(
+            view_card,
+            text="Window 1 = off",
+            bg="#252526",
+            fg="#8f8f8f",
+            font=("Helvetica", 9),
+        )
+        self.savgol_hint_label.pack(anchor="w", padx=8, pady=(0, 2))
+
+        self.savgol_status_label = tk.Label(
+            view_card,
+            text=self._smoothing_status_text(),
+            bg="#252526",
+            fg="#d0d0d0",
+            font=("Courier", 9),
+        )
+        self.savgol_status_label.pack(anchor="w", padx=8, pady=(0, 8))
+
         # ── export settings ──
         export_card = tk.Frame(side_panel, bg="#252526", bd=1, relief=tk.FLAT)
         export_card.pack(fill=tk.X, pady=(0, 8))
@@ -1456,6 +1550,19 @@ class LabelerApp:
         state = "normal" if prefix_enabled else "disabled"
         self.prefix_entry.config(state=state)
         self.video_scale_label.config(text=f"{int(self.video_scale_var.get())}%")
+        self._refresh_smoothing_ui()
+
+    def _refresh_smoothing_ui(self):
+        if not hasattr(self, "savgol_window_var"):
+            return
+        self._normalize_smoothing_settings()
+        self._updating_smoothing_ui = True
+        try:
+            self.savgol_window_var.set(str(self.angular_savgol_window))
+            self.savgol_poly_var.set(str(self.angular_savgol_poly))
+        finally:
+            self._updating_smoothing_ui = False
+        self.savgol_status_label.config(text=self._smoothing_status_text())
 
     def _on_export_setting_change(self, _event=None):
         if self._updating_export_ui:
@@ -1481,6 +1588,37 @@ class LabelerApp:
             self._update_video_display_size()
             self._seek_to(self.cur_frame)
 
+    def _on_smoothing_change(self, _event=None):
+        if self._updating_smoothing_ui:
+            return
+
+        old_window = self.angular_savgol_window
+        old_poly = self.angular_savgol_poly
+        try:
+            self.angular_savgol_window = int(self.savgol_window_var.get())
+        except (TypeError, ValueError):
+            self.angular_savgol_window = old_window
+        try:
+            self.angular_savgol_poly = int(self.savgol_poly_var.get())
+        except (TypeError, ValueError):
+            self.angular_savgol_poly = old_poly
+
+        self._refresh_smoothing_ui()
+        self._save_export_settings()
+
+        if self.task_data is not None:
+            self.task_data.savgol_window = self.angular_savgol_window
+            self.task_data.savgol_poly = self.angular_savgol_poly
+            self.task_data.recompute_angular_velocity()
+            self._update_plot_data()
+            self._update_plot_cursor(self.cur_frame)
+
+        if (
+            old_window != self.angular_savgol_window
+            or old_poly != self.angular_savgol_poly
+        ):
+            self._status(self._smoothing_status_text())
+
     def _update_video_display_size(self):
         td = self.task_data
         if td is None or td.frame_w <= 0 or td.frame_h <= 0:
@@ -1505,7 +1643,12 @@ class LabelerApp:
         self._refresh_task_sidebar()
         self._update_task_metadata_panel(task)
 
-        td = TaskData(PREPROC_DIR, task)
+        td = TaskData(
+            PREPROC_DIR,
+            task,
+            savgol_window=self.angular_savgol_window,
+            savgol_poly=self.angular_savgol_poly,
+        )
         td.load()
         self.task_data = td
 

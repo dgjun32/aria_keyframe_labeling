@@ -15,6 +15,28 @@ from scipy.signal import savgol_filter
 from pathlib import Path
 
 
+def _normalize_savgol_params(length: int, window: int, poly: int) -> tuple[int | None, int]:
+    """Clamp Savitzky-Golay params. Window=1 disables smoothing."""
+    if length < 3:
+        return None, 0
+
+    window = int(window)
+    poly = int(poly)
+
+    if window <= 1:
+        return None, 0
+
+    max_window = length if length % 2 == 1 else length - 1
+    window = min(window, max_window)
+    if window % 2 == 0:
+        window -= 1
+    if window < 3:
+        return None, 0
+
+    poly = max(0, min(poly, window - 1))
+    return window, poly
+
+
 def compute_angular_velocity(pitch_yaw: np.ndarray, fps: float,
                              savgol_window: int = 11,
                              savgol_poly: int = 2) -> np.ndarray:
@@ -33,13 +55,13 @@ def compute_angular_velocity(pitch_yaw: np.ndarray, fps: float,
     if T <= 1 or fps <= 0:
         return np.zeros(T, dtype=np.float64)
 
-    if T < savgol_window:
-        savgol_window = max(T | 1, 3)  # ensure odd and >= 3
-    if savgol_poly >= savgol_window:
-        savgol_poly = savgol_window - 1
-
-    pitch_s = savgol_filter(pitch, savgol_window, savgol_poly)
-    yaw_s = savgol_filter(yaw, savgol_window, savgol_poly)
+    smooth_window, smooth_poly = _normalize_savgol_params(T, savgol_window, savgol_poly)
+    if smooth_window is None:
+        pitch_s = pitch
+        yaw_s = yaw
+    else:
+        pitch_s = savgol_filter(pitch, smooth_window, smooth_poly)
+        yaw_s = savgol_filter(yaw, smooth_window, smooth_poly)
 
     # Convert to 3D unit vectors on sphere
     x = np.cos(pitch_s) * np.cos(yaw_s)
@@ -89,10 +111,19 @@ def discover_tasks(base_dir: str) -> list[str]:
 class TaskData:
     """All data for a single task, loaded eagerly."""
 
-    def __init__(self, base_dir: str, task_name: str, fps: float = 15.0):
+    def __init__(
+        self,
+        base_dir: str,
+        task_name: str,
+        fps: float = 15.0,
+        savgol_window: int = 11,
+        savgol_poly: int = 2,
+    ):
         self.base_dir = base_dir
         self.task_name = task_name
         self.fps = fps
+        self.savgol_window = int(savgol_window)
+        self.savgol_poly = int(savgol_poly)
 
         self.cap: cv2.VideoCapture | None = None
         self.total_frames: int = 0
@@ -108,6 +139,17 @@ class TaskData:
 
     def _path(self, suffix: str) -> str:
         return os.path.join(self.base_dir, f"{self.task_name}{suffix}")
+
+    def recompute_angular_velocity(self):
+        if self.pitch_yaw is None:
+            self.angular_velocity_deg = None
+            return
+        self.angular_velocity_deg = compute_angular_velocity(
+            self.pitch_yaw,
+            self.fps,
+            savgol_window=self.savgol_window,
+            savgol_poly=self.savgol_poly,
+        )
 
     def load(self):
         """Load all data for this task."""
@@ -131,9 +173,7 @@ class TaskData:
         py_path = self._path("_pitch_yaw.npz")
         if os.path.exists(py_path):
             self.pitch_yaw = np.load(py_path)["pitch_yaw"]  # (T, 6)
-            self.angular_velocity_deg = compute_angular_velocity(
-                self.pitch_yaw, self.fps
-            )
+            self.recompute_angular_velocity()
 
         # Time axis
         T = self.total_frames
