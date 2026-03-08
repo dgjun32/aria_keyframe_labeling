@@ -6,6 +6,7 @@ eval_results/
 eval_results_generalized/
 dataset_multiple/
 dataset_single/
+debug/
 
 # Large files
 *.zip
