@@ -142,11 +142,13 @@ PROMPT_CONFIG_NOTES = {
         "name appears in the subtitles.\n"
         "  - Gaze fixation: when the green dot stabilises on an object, "
         "the wearer is fixating on it.\n"
-        "  - Hand gesture: when the hand reaches toward the fixated object.\n"
+        "  - Hand gesture: when the hand points toward a specific object.\n"
         "The keyframe is the moment where all three signals converge — "
         "the caption mentions the target, the gaze is fixated on it, and "
-        "the hand reaches toward it. If the cues don't perfectly align, "
-        "prioritise the moment of hand approach to the gaze-fixated object."
+        "the hand points toward it. Prioritise the time interval where "
+        "the object indicated by the hand and the gaze point are spatially "
+        "aligned (same object/region), and use captions to confirm it is "
+        "the instructed target."
     ),
 }
 
