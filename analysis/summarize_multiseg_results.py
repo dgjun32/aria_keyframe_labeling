@@ -66,7 +66,9 @@ def _build_rows(results_dir: str, contains: str | None) -> list[dict[str, str]]:
 
         row = {
             "file": os.path.basename(result_path),
+            "prompt": str(config.get("prompt_variant", "baseline")),
             "fps": str(config.get("video_fps", "-")),
+            "audio": "T" if config.get("include_audio") else "F",
             "cap": "T" if config.get("caption") else "F",
             "gaze": "T" if config.get("gaze_annot") else "F",
             "seg_f1": _fmt_num(_get_nested(agg, "segment_f1", "mean")),
@@ -116,7 +118,9 @@ def _print_table(rows: list[dict[str, str]]) -> None:
         return
 
     columns = [
+        "prompt",
         "fps",
+        "audio",
         "cap",
         "gaze",
         "seg_f1",

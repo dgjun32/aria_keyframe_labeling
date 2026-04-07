@@ -31,6 +31,9 @@ from google.genai import types
 
 # ── constants ─────────────────────────────────────────────────────────────
 VIDEO_FPS = 15  # ground-truth frame rate
+DEFAULT_GEMINI_MODEL = "gemini-3.1-flash-lite-preview"
+DEFAULT_GEMINI_VIDEO_FPS_HINT = 4
+DEFAULT_THINKING_BUDGET = 0
 
 PRICING = {
     "gemini-2.5-flash": {
@@ -56,14 +59,21 @@ PRICING = {
 }
 
 
-def _load_dotenv_map(dotenv_path: str) -> dict[str, str]:
-    """Parse a simple .env file without requiring python-dotenv."""
-    values: dict[str, str] = {}
-    if not os.path.exists(dotenv_path):
-        return values
+def _read_key_from_dotenv(
+    keys: tuple[str, ...] = (
+        "GEMINI_API_KEY",
+        "GOOGLE_API_KEY",
+        "GOOGLE_GENAI_API_KEY",
+    ),
+    dotenv_path: str = ".env",
+) -> str:
+    """Best-effort .env reader for local runs without extra dependencies."""
+    path = Path(dotenv_path)
+    if not path.exists():
+        return ""
 
-    with open(dotenv_path) as f:
-        for raw_line in f:
+    try:
+        for raw_line in path.read_text(encoding="utf-8").splitlines():
             line = raw_line.strip()
             if not line or line.startswith("#"):
                 continue
@@ -73,45 +83,55 @@ def _load_dotenv_map(dotenv_path: str) -> dict[str, str]:
                 continue
             key, value = line.split("=", 1)
             key = key.strip()
-            value = value.strip()
-            if not key:
+            if key not in keys:
                 continue
-            if len(value) >= 2 and value[0] == value[-1] and value[0] in ("'", '"'):
-                value = value[1:-1]
-            values[key] = value
-    return values
+            value = value.strip().strip("\"").strip("'")
+            if value:
+                return value
+    except OSError:
+        return ""
+
+    return ""
 
 
-def resolve_gemini_api_key(cli_api_key: str | None) -> str:
-    """Resolve Gemini API key from CLI arg, env vars, or local .env file."""
-    if cli_api_key:
-        return cli_api_key
+def resolve_gemini_api_key(cli_key: str | None = None) -> str:
+    """Resolve Gemini API key from CLI arg, env vars, or a local .env file."""
+    if cli_key and str(cli_key).strip():
+        return str(cli_key).strip()
 
-    for env_name in ("GEMINI_API_KEY", "GOOGLE_API_KEY"):
-        env_value = os.environ.get(env_name)
-        if env_value:
-            return env_value
+    for env_name in ("GEMINI_API_KEY", "GOOGLE_API_KEY", "GOOGLE_GENAI_API_KEY"):
+        value = os.environ.get(env_name, "").strip()
+        if value:
+            return value
 
-    dotenv_candidates = [
-        os.path.join(os.getcwd(), ".env"),
-        os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env"),
-    ]
-    seen: set[str] = set()
-    for dotenv_path in dotenv_candidates:
-        if dotenv_path in seen:
-            continue
-        seen.add(dotenv_path)
-        dotenv_map = _load_dotenv_map(dotenv_path)
-        for env_name in ("GEMINI_API_KEY", "GOOGLE_API_KEY"):
-            env_value = dotenv_map.get(env_name)
-            if env_value:
-                os.environ.setdefault(env_name, env_value)
-                return env_value
+    return _read_key_from_dotenv()
 
-    raise ValueError(
-        "No Gemini API key found. Pass --api-key, export GEMINI_API_KEY, "
-        "or put GEMINI_API_KEY in a local .env file."
-    )
+
+def resolve_openai_api_key(cli_key: str | None = None) -> str:
+    """Resolve OpenAI API key from CLI arg, env vars, or a local .env file."""
+    if cli_key and str(cli_key).strip():
+        return str(cli_key).strip()
+
+    value = os.environ.get("OPENAI_API_KEY", "").strip()
+    if value:
+        return value
+
+    return _read_key_from_dotenv(keys=("OPENAI_API_KEY",))
+
+
+def build_thinking_config(model_name: str, thinking_budget: int = DEFAULT_THINKING_BUDGET):
+    """Build a ThinkingConfig with Gemini-3-friendly minimal-thinking defaults.
+
+    Gemini 3.x models prefer thinking_level values such as "minimal".
+    Older SDKs may not expose that field yet, so we fall back to
+    thinking_budget=0 which also disables/minimizes thinking.
+    """
+    if model_name.startswith("gemini-3") and thinking_budget == 0:
+        try:
+            return types.ThinkingConfig(thinking_level="minimal")
+        except TypeError:
+            pass
+    return types.ThinkingConfig(thinking_budget=thinking_budget)
 
 PROMPT_TEMPLATE = """\
 You are analyzing a first-person (egocentric) video recorded in a store.
@@ -200,11 +220,13 @@ PROMPT_CONFIG_NOTES = {
         "name appears in the subtitles.\n"
         "  - Gaze fixation: when the green dot stabilises on an object, "
         "the wearer is fixating on it.\n"
-        "  - Hand gesture: when the hand reaches toward the fixated object.\n"
+        "  - Hand gesture: when the hand points toward a specific object.\n"
         "The keyframe is the moment where all three signals converge — "
         "the caption mentions the target, the gaze is fixated on it, and "
-        "the hand reaches toward it. If the cues don't perfectly align, "
-        "prioritise the moment of hand approach to the gaze-fixated object."
+        "the hand points toward it. Prioritise the time interval where "
+        "the object indicated by the hand and the gaze point are spatially "
+        "aligned (same object/region), and use captions to confirm it is "
+        "the instructed target."
     ),
 }
 
@@ -380,68 +402,12 @@ def prepare_video(
 #  GROUND TRUTH
 # ══════════════════════════════════════════════════════════════════════════
 def load_ground_truth(episode_dir: str) -> dict | None:
-    """Load GT labels (labels.npy preferred, annotations.json fallback)."""
+    """Load labels.npy → extract keyframe segment and per-frame labels."""
     labels_path = os.path.join(episode_dir, "labels.npy")
-    labels: np.ndarray | None = None
-
-    if os.path.exists(labels_path):
-        labels = np.load(labels_path).astype(np.int8)
-    else:
-        ann_path = os.path.join(episode_dir, "annotations.json")
-        if os.path.exists(ann_path):
-            try:
-                with open(ann_path) as f:
-                    ann_data = json.load(f)
-                anns = ann_data.get("annotations", [])
-                if not isinstance(anns, list):
-                    anns = []
-
-                video_path = os.path.join(episode_dir, "video.mp4")
-                total_frames = 0
-                if os.path.exists(video_path):
-                    cap = cv2.VideoCapture(video_path)
-                    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-                    cap.release()
-
-                if total_frames <= 0:
-                    max_end = -1
-                    for ann in anns:
-                        if not isinstance(ann, dict):
-                            continue
-                        end = ann.get("end_frame", ann.get("end", -1))
-                        try:
-                            end = int(end)
-                        except (TypeError, ValueError):
-                            continue
-                        max_end = max(max_end, end)
-                    total_frames = max_end + 1 if max_end >= 0 else 0
-
-                if total_frames > 0:
-                    labels = np.zeros(total_frames, dtype=np.int8)
-                    for ann in anns:
-                        if not isinstance(ann, dict):
-                            continue
-                        s = ann.get("start_frame", ann.get("start", -1))
-                        e = ann.get("end_frame", ann.get("end", -1))
-                        try:
-                            s = int(s)
-                            e = int(e)
-                        except (TypeError, ValueError):
-                            continue
-                        if e < s:
-                            s, e = e, s
-                        if s < 0:
-                            continue
-                        s = max(0, min(total_frames - 1, s))
-                        e = max(0, min(total_frames - 1, e))
-                        if e >= s:
-                            labels[s:e + 1] = 1
-            except Exception:
-                labels = None
-
-    if labels is None:
+    if not os.path.exists(labels_path):
         return None
 
+    labels = np.load(labels_path).astype(np.int8)
     T = len(labels)
 
     # Find contiguous segment boundaries
@@ -487,7 +453,8 @@ def call_gemini(
     model_name: str,
     video_bytes: bytes,
     prompt: str,
-    video_fps: int = 2,
+    video_fps: int = DEFAULT_GEMINI_VIDEO_FPS_HINT,
+    thinking_budget: int = DEFAULT_THINKING_BUDGET,
 ):
     """Send video + prompt to Gemini and return the raw response object."""
     parts = [
@@ -503,7 +470,7 @@ def call_gemini(
         contents=types.Content(parts=parts),
         config=types.GenerateContentConfig(
             temperature=0.0,
-            thinking_config=types.ThinkingConfig(thinking_budget=-1),
+            thinking_config=build_thinking_config(model_name, thinking_budget),
             response_mime_type="application/json",
         ),
     )
@@ -816,7 +783,7 @@ def main():
     )
     parser.add_argument("--dataset-dir", default="./dataset",
                         help="Path to dataset/ directory")
-    parser.add_argument("--model", default="gemini-2.5-pro",
+    parser.add_argument("--model", default=DEFAULT_GEMINI_MODEL,
                         choices=["gemini-2.5-pro", "gemini-2.5-flash", "gemini-3-flash", "gemini-3-flash-preview", "gemini-3.1-flash-lite-preview"])
     parser.add_argument("--output-dir", default="./eval_results")
     parser.add_argument("--resume", action="store_true",
@@ -827,8 +794,8 @@ def main():
                         help="Comma-separated tolerance values in seconds")
     parser.add_argument("--frame-tolerance", default="0,1,3,5",
                         help="Comma-separated frame tolerance values for hit check")
-    parser.add_argument("--video-fps", type=int, default=2,
-                        help="FPS hint sent to Gemini for video sampling (default: 2)")
+    parser.add_argument("--video-fps", type=int, default=DEFAULT_GEMINI_VIDEO_FPS_HINT,
+                        help="FPS hint sent to Gemini for video sampling (default: 4)")
     parser.add_argument("--caption", action="store_true",
                         help="Overlay real-time transcript captions on the video")
     parser.add_argument("--gaze-annot", action="store_true",
@@ -840,7 +807,7 @@ def main():
                              "Resize happens BEFORE overlays so text stays crisp.")
     parser.add_argument("--api-key",
                         default="",
-                        help="Gemini API key (optional if GEMINI_API_KEY or .env is set)")
+                        help="Gemini API key (optional if env var or .env is set)")
     parser.add_argument("--debug", action="store_true",
                         help="Save VLM input videos to debug/{config_name}/")
     parser.add_argument("--verbose", action="store_true")
@@ -905,6 +872,9 @@ def main():
 
     # ── Gemini client ──
     api_key = resolve_gemini_api_key(args.api_key)
+    if not api_key:
+        print("ERROR: No Gemini API key found. Use --api-key, set GEMINI_API_KEY/GOOGLE_API_KEY, or add one to .env.")
+        return
     client = genai.Client(api_key=api_key)
 
     all_results: list[dict] = []
@@ -916,12 +886,6 @@ def main():
             continue
 
         ep_dir = os.path.join(dataset_dir, ep_name)
-        if not os.path.isdir(ep_dir):
-            print(
-                f"  [{i+1}/{len(episode_names)}] {ep_name}: "
-                "SKIP (missing episode directory)"
-            )
-            continue
 
         # Load ground truth
         gt = load_ground_truth(ep_dir)
@@ -994,6 +958,7 @@ def main():
                 response = call_gemini(
                     client, args.model, video_bytes, prompt,
                     video_fps=args.video_fps,
+                    thinking_budget=DEFAULT_THINKING_BUDGET,
                 )
                 raw_text = response.text
                 cost_info = extract_cost(response, args.model)

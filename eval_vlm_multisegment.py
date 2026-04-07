@@ -25,6 +25,9 @@ import numpy as np
 from google import genai
 
 from eval_vlm_baseline import (
+    DEFAULT_GEMINI_MODEL,
+    DEFAULT_GEMINI_VIDEO_FPS_HINT,
+    DEFAULT_THINKING_BUDGET,
     PROMPT_CONFIG_NOTES,
     VIDEO_FPS,
     _save_as_h264,
@@ -55,6 +58,8 @@ A spoken instruction was given:
   "{transcript}"
 
 {config_note}
+
+{variant_note}
 
 Your task: identify all distinct **keyframe time ranges** that capture the
 moments of interaction with the target object mentioned in the instruction.
@@ -93,6 +98,407 @@ Important:
   - Always return positive start/end values.
   - Never return -1.
 """
+
+
+PROMPT_TEMPLATE_MULTI_SUBGOAL = """\
+You are analyzing a first-person (egocentric) video recorded in a store.
+The wearer is looking at items on shelves and interacts with specific objects.
+
+A spoken instruction was given:
+  "{transcript}"
+
+{config_note}
+
+Your task has two steps:
+
+Step 1: Determine the number of keyframes.
+Count the number of distinct target-object interaction events that are required
+to fulfill the instruction. Count interaction events, not just noun mentions.
+For pick-and-place tasks, this is often a pick event followed by a later place
+event, but only output the events that are clearly supported by the video.
+
+Step 2: Identify each keyframe time range.
+For each keyframe in chronological order, identify a short interval whose
+midpoint lands inside the decisive interaction moment for that subgoal.
+
+Use these rules for pick-and-place actions:
+  - Pick event: center the interval on the moment when the object is securely
+    grasped and begins to leave its original support, not on the initial reach.
+  - Place event: center the interval on the moment when the object makes final
+    contact at the destination and the hand is releasing it, not on the
+    approach or carry motion.
+  - Ignore long transport motion between pick and place.
+
+The keyframe intervals are determined by the convergence of multiple cues:
+  - Utterance timing: when the spoken instruction refers to the target object
+    or destination.
+  - Hand-object interaction: grasp, lift-off, placement, release, or stable
+    contact at the destination.
+  - Gaze fixation: when the wearer's gaze stabilises on the target object
+    or destination (if gaze information is available).
+
+Each interval should be short and precise, typically 0.2-2.0 seconds.
+Do not merge two clearly separate events into a single long interval.
+If unsure, prefer fewer precise intervals over extra speculative ones.
+
+The video is {duration:.1f} seconds long (recorded at {fps:.1f} FPS).
+
+Return your answer as JSON:
+{{
+  "reasoning": "<brief explanation of which cues you used>",
+  "num_keyframes": <int>,
+  "object_references": ["<object or destination 1>", "<object or destination 2>"],
+  "subgoal_instructions": ["pick up <object>", "place it <destination>"],
+  "keyframe_intervals": [
+    {{"start": <float, seconds>, "end": <float, seconds>}}
+  ]
+}}
+
+Important:
+  - All lists must have the same length, equal to num_keyframes.
+  - Return between 1 and {max_intervals} intervals.
+  - Intervals must be sorted chronologically.
+  - Intervals should be non-overlapping.
+  - Always return positive start/end values.
+  - Never return -1.
+"""
+
+
+PROMPT_TEMPLATE_MULTI_SUBGOAL_LITERAL = """\
+You are analyzing a first-person (egocentric) video recorded in a store.
+The wearer is looking at items on shelves and interacts with specific objects.
+
+A spoken instruction was given:
+  "{transcript}"
+
+{config_note}
+
+Your task has two steps:
+
+**Step 1: Determine the number of keyframes.**
+Analyze the spoken instruction and count the number of distinct object
+references or interaction moments. Each time the instruction refers to a
+target object (by pointing words like "this", "that", or by naming it),
+it corresponds to one keyframe - the moment the wearer interacts with
+that object.
+
+Examples:
+  - "I want this cupcake" -> 1 keyframe
+    subgoal_instructions: ["pick up this cupcake"]
+  - "give me this cupcake and this beverage" -> 2 keyframes
+    subgoal_instructions: ["pick up this cupcake", "pick up this beverage"]
+  - "put that one in this basket" -> 2 keyframes
+    subgoal_instructions: ["pick up that one", "place it in this basket"]
+  - "put that one in this basket and the coca cola in this basket"
+    -> 4 keyframes
+    subgoal_instructions: ["pick up that one", "place it in this basket",
+      "pick up the coca cola", "place it in this basket"]
+  - "point to this soda" -> 1 keyframe
+    subgoal_instructions: ["pick up this soda"]
+
+IMPORTANT: Each subgoal_instruction MUST use one of exactly two verb forms:
+  1. "pick up <object>" - when the wearer selects / grabs / wants an object.
+  2. "place it <destination>" - when the wearer puts / places the held
+     object at a destination (e.g., "place it in this basket",
+     "place it here", "place it on the shelf").
+  Do NOT use any other verbs (e.g., "point to", "grab", "put", "get",
+  "move", "take"). Always rephrase to "pick up" or "place it".
+
+**Step 2: Identify each keyframe's time range.**
+For each keyframe (in chronological order), identify the precise time interval
+that captures the moment of interaction with the corresponding object.
+
+The keyframe intervals are determined by the **convergence of multiple cues**:
+  - Utterance timing: when the instruction refers to the target object.
+  - Hand gesture (pointing): when the hand/finger clearly points to a
+    specific object or region.
+  - Gaze fixation: when the wearer's gaze stabilises on the target object
+    (if gaze information is available).
+
+Prioritise intervals where the object indicated by hand pointing and the gaze
+point are spatially aligned (same object/region). Use utterance timing to
+confirm that this aligned object is the instructed target.
+
+Each interval should be short and precise, typically 0.2-2.0 seconds.
+Do not merge two clearly separate events into a single long interval.
+
+The video is {duration:.1f} seconds long (recorded at {fps:.1f} FPS).
+
+Return your answer as JSON:
+{{
+  "reasoning": "<brief explanation of which cues you used>",
+  "num_keyframes": <int, number of distinct interaction moments>,
+  "object_references": ["<object 1>", "<object 2>", ...],
+  "subgoal_instructions": ["pick up <object>", "place it <destination>", ...],
+  "keyframe_intervals": [
+    {{"start": <float, seconds>, "end": <float, seconds>}}
+  ]
+}}
+
+Important:
+  - All lists (object_references, subgoal_instructions, keyframe_intervals)
+    must have the same length, equal to num_keyframes.
+  - Maximum {max_intervals} intervals allowed.
+  - Intervals must be sorted chronologically.
+  - Intervals should be non-overlapping.
+  - Always return positive start/end values.
+  - Never return -1.
+"""
+
+
+PROMPT_TEMPLATE_MULTI_POINTING_LITERAL = """\
+You are analyzing a first-person (egocentric) video recorded in a store.
+The wearer is looking at items on shelves and visually indicates target objects
+or destinations with the hand or finger.
+
+A spoken instruction was given:
+  "{transcript}"
+
+{config_note}
+
+Your task has two steps:
+
+**Step 1: Determine the number of keyframes.**
+Analyze the spoken instruction and count the number of distinct deictic
+reference moments that should appear in the video. A deictic reference moment
+is when the wearer clearly indicates a target object or destination region with
+the hand or finger, typically for words such as "this", "that", "here", or a
+named target/destination.
+
+Examples:
+  - "I want this cupcake" -> 1 keyframe
+    subgoal_instructions: ["point to this cupcake"]
+  - "give me this cupcake and this beverage" -> 2 keyframes
+    subgoal_instructions: ["point to this cupcake", "point to this beverage"]
+  - "put that one in this basket" -> 2 keyframes
+    subgoal_instructions: ["point to that one", "point to this basket"]
+  - "put that one in this basket and the coca cola in this basket"
+    -> 4 keyframes
+    subgoal_instructions: ["point to that one", "point to this basket",
+      "point to the coca cola", "point to this basket"]
+  - "point to this soda" -> 1 keyframe
+    subgoal_instructions: ["point to this soda"]
+
+IMPORTANT: Each subgoal_instruction MUST use exactly one verb form:
+  - "point to <object or destination>"
+  Do NOT rewrite the action into other manipulation verbs.
+
+**Step 2: Identify each keyframe's time range.**
+For each keyframe (in chronological order), identify the precise short interval
+that captures the clearest pointing/indicating moment for the corresponding
+object or destination.
+
+The keyframe intervals are determined by the **convergence of multiple cues**:
+  - Utterance timing: when the instruction refers to the target object or
+    destination.
+  - Hand/finger pointing: when the hand direction clearly indicates a specific
+    object or region.
+  - Gaze fixation: when the wearer's gaze stabilises on that same object or
+    region (if gaze information is available).
+
+Prioritise intervals where the hand/finger indication is most explicit and
+spatially aligned with the intended object or destination. Center the interval
+on the strongest pointing frame itself, not on earlier arm motion or later
+aftermath. Only use visually observed pointing/reference moments and do not
+invent extra events that are not clearly shown.
+
+Each interval should be short and precise, typically 0.2-2.0 seconds.
+Do not merge two clearly separate pointing events into a single long interval.
+
+The video is {duration:.1f} seconds long (recorded at {fps:.1f} FPS).
+
+Return your answer as JSON:
+{{
+  "reasoning": "<brief explanation of which cues you used>",
+  "num_keyframes": <int, number of distinct reference moments>,
+  "object_references": ["<object or destination 1>", "<object or destination 2>", ...],
+  "subgoal_instructions": ["point to <object or destination>", ...],
+  "keyframe_intervals": [
+    {{"start": <float, seconds>, "end": <float, seconds>}}
+  ]
+}}
+
+Important:
+  - All lists (object_references, subgoal_instructions, keyframe_intervals)
+    must have the same length, equal to num_keyframes.
+  - Maximum {max_intervals} intervals allowed.
+  - Intervals must be sorted chronologically.
+  - Intervals should be non-overlapping.
+  - Always return positive start/end values.
+  - Never return -1.
+"""
+
+
+PROMPT_VARIANT_NOTES = {
+    "baseline": (
+        "Use the visible evidence in the video to localize the interaction phases."
+    ),
+    "event_auto_count": (
+        "Determine the number of distinct target-object interaction events from the evidence in the video.\n"
+        "Do not assume there are always two events.\n"
+        "Return exactly as many intervals as there are clearly separated relevant interaction events, up to the allowed maximum.\n"
+        "Ignore unrelated hand motion, context, and long carry or dwell periods between events."
+    ),
+    "event_auto_count_centered": (
+        "Determine the number of distinct target-object interaction events from the evidence in the video.\n"
+        "Do not assume there are always two events.\n"
+        "Return exactly as many intervals as there are clearly separated relevant interaction events, up to the allowed maximum.\n"
+        "For each event, center the interval on the decisive hand-object interaction frame so the midpoint stays inside the keyframe region.\n"
+        "Do not pad an interval with long approach or aftermath frames."
+    ),
+    "pick_place_transition": (
+        "For pick-and-place actions, prefer state-transition moments over approach motion.\n"
+        "The first interval should center on the pick moment when the object is securely grasped and begins to leave its original support, not on the early reach.\n"
+        "The second interval should center on the place moment when the object first settles at the destination and the hand is releasing it, not on the approach path.\n"
+        "Ignore long carrying motion between pick and place."
+    ),
+    "pick_place_release_focus": (
+        "For pick-and-place actions, use two short intervals around the decisive state changes.\n"
+        "Pick interval: center the midpoint near lift-off, after grasp is established.\n"
+        "Place interval: center the midpoint later, near final contact and release, after the object reaches the destination.\n"
+        "Do not anchor the place interval to the beginning of the approach."
+    ),
+    "pick_place_state_change_strict": (
+        "Detect each distinct target-object state change.\n"
+        "For the pick event, the midpoint should land when the object is already being lifted from its original position.\n"
+        "For the place event, the midpoint should land when the object is in contact with the destination and the hand is releasing or has just released it.\n"
+        "If an interval would place its midpoint on reach, transport, or hover frames, shift it later and tighten it."
+    ),
+    "pick_place_subgoal_extract": (
+        "First infer the subgoal sequence and the number of keyframes, then localize each interval.\n"
+        "For pick-and-place actions, use `pick up <object>` for the pick event and `place it <destination>` for the place event.\n"
+        "Each interval midpoint should land on the decisive state change, not on approach or carry frames."
+    ),
+    "pick_place_subgoal_literal": (
+        "Use the literal two-step keyframe extraction format with num_keyframes, object_references, subgoal_instructions, and keyframe_intervals."
+    ),
+    "pointing_subgoal_literal": (
+        "Use the literal two-step keyframe extraction format for pointing-only reference moments with num_keyframes, object_references, subgoal_instructions, and keyframe_intervals."
+    ),
+    "count_then_localize": (
+        "First decide how many distinct interaction phases are present: usually 1 or 2.\n"
+        "Then localize each phase separately.\n"
+        "Do not output two intervals unless the video clearly shows two separate interaction moments."
+    ),
+    "audio_anchor": (
+        "Use the audio track and the burned-in captions together.\n"
+        "The spoken timing helps determine when the wearer commits to the requested action.\n"
+        "Prefer intervals that begin near the relevant spoken phrase and tighten around the actual hand-object event."
+    ),
+    "phase_decompose": (
+        "Decompose the task into chronological phases.\n"
+        "For example, if the video shows an earlier first interaction and a later second interaction,\n"
+        "return them as interval 1 and interval 2 in time order.\n"
+        "Avoid combining the two phases into one broad interval."
+    ),
+    "phase_decompose_strict": (
+        "Decompose the task into chronological phases and preserve their order.\n"
+        "If there are two distinct interaction phases, interval 1 must describe the earlier phase and interval 2 the later phase.\n"
+        "Before answering, internally check that the midpoint of each interval lands on the decisive hand-object interaction,\n"
+        "not on approach frames or aftermath frames."
+    ),
+    "phase_decompose_tight": (
+        "Decompose the task into chronological phases.\n"
+        "For each phase, choose the shortest interval that still captures the decisive contact, grasp, pickup, placement, or release.\n"
+        "Keep each interval center close to the target interaction itself, and avoid wide intervals that include too much lead-in or follow-through."
+    ),
+    "phase_balanced": (
+        "Decompose the task into chronological phases.\n"
+        "Use speech and captions to identify the correct object, but set the final interval boundaries from the visible hand-object interaction.\n"
+        "For each phase, keep the interval wide enough that its midpoint stays inside the main interaction, even when the visible manipulation lasts longer than the spoken phrase.\n"
+        "Avoid sliding an interval too late just because the later frames look stronger."
+    ),
+    "phase_centered": (
+        "Decompose the task into chronological phases.\n"
+        "For each phase, first identify the single most decisive frame where the hand is firmly engaging the correct object.\n"
+        "Then expand a short interval around that frame so the midpoint remains on the interaction itself.\n"
+        "Use the spoken instruction only as support, not as the sole anchor for timing."
+    ),
+    "phase_early_anchor": (
+        "Decompose the task into chronological phases and preserve their order.\n"
+        "Interval 1 must stay anchored to the first sustained interaction with the first requested object, not drift forward toward the later motion.\n"
+        "If the first interaction spans many frames, include enough of it so the interval midpoint still lands inside that first phase.\n"
+        "Apply the same rule to interval 2 for the later phase."
+    ),
+    "phase_balanced_two_bias": (
+        "These videos often contain two distinct target-object interaction phases.\n"
+        "Prefer two time-ordered intervals when the wearer clearly touches or grasps two requested objects.\n"
+        "Still set each interval from the visible hand-object interaction rather than only the spoken phrase,\n"
+        "and widen an interval slightly if needed so its midpoint remains inside the phase."
+    ),
+    "double_pickup_bias": (
+        "These videos often contain two distinct target-object interaction phases.\n"
+        "Prefer returning two time-ordered intervals unless the video clearly contains only one relevant interaction phase.\n"
+        "The first interval should stay anchored to the first target interaction even if the later interaction is visually stronger."
+    ),
+    "tight_contact": (
+        "Choose the shortest interval that still captures the decisive interaction.\n"
+        "The center of the interval should fall close to the moment of contact, grasp, placement, or release,\n"
+        "not on the approach before it or the aftermath after it."
+    ),
+    "ordered_focus": (
+        "Order matters.\n"
+        "Interval 1 should correspond to the earliest relevant interaction phase, interval 2 to the next one.\n"
+        "If there are two distinct phases, make sure the first interval is anchored to the first phase rather than the stronger later event."
+    ),
+    "self_check": (
+        "Before answering, internally verify four things:\n"
+        "1. The interval count matches the number of distinct interaction phases.\n"
+        "2. Each interval is temporally tight.\n"
+        "3. Intervals are sorted and non-overlapping.\n"
+        "4. The midpoint of each interval lands on the target interaction rather than context frames."
+    ),
+}
+
+
+def get_prompt_variant_note(prompt_variant: str) -> str:
+    if prompt_variant not in PROMPT_VARIANT_NOTES:
+        raise KeyError(f"Unknown prompt variant: {prompt_variant}")
+    return PROMPT_VARIANT_NOTES[prompt_variant]
+
+
+def build_multi_prompt(
+    *,
+    prompt_variant: str,
+    transcript_text: str,
+    duration_sec: float,
+    fps: float,
+    config_note: str,
+    max_intervals: int,
+) -> str:
+    if prompt_variant == "pick_place_subgoal_extract":
+        return PROMPT_TEMPLATE_MULTI_SUBGOAL.format(
+            transcript=transcript_text,
+            duration=duration_sec,
+            fps=fps,
+            config_note=config_note,
+            max_intervals=max_intervals,
+        )
+    if prompt_variant == "pick_place_subgoal_literal":
+        return PROMPT_TEMPLATE_MULTI_SUBGOAL_LITERAL.format(
+            transcript=transcript_text,
+            duration=duration_sec,
+            fps=fps,
+            config_note=config_note,
+            max_intervals=max_intervals,
+        )
+    if prompt_variant == "pointing_subgoal_literal":
+        return PROMPT_TEMPLATE_MULTI_POINTING_LITERAL.format(
+            transcript=transcript_text,
+            duration=duration_sec,
+            fps=fps,
+            config_note=config_note,
+            max_intervals=max_intervals,
+        )
+
+    return PROMPT_TEMPLATE_MULTI.format(
+        transcript=transcript_text,
+        duration=duration_sec,
+        fps=fps,
+        config_note=config_note,
+        variant_note=get_prompt_variant_note(prompt_variant),
+        max_intervals=max_intervals,
+    )
 
 
 def _get_video_meta(video_path: str) -> tuple[int, float]:
@@ -295,8 +701,17 @@ def parse_multisegment_response(response, max_intervals: int) -> dict | None:
 
     reasoning = ""
     raw_intervals = None
+    num_keyframes = None
+    object_references = []
+    subgoal_instructions = []
     if isinstance(payload, dict):
         reasoning = payload.get("reasoning", "")
+        if isinstance(payload.get("num_keyframes"), int):
+            num_keyframes = int(payload["num_keyframes"])
+        if isinstance(payload.get("object_references"), list):
+            object_references = [str(item) for item in payload["object_references"]]
+        if isinstance(payload.get("subgoal_instructions"), list):
+            subgoal_instructions = [str(item) for item in payload["subgoal_instructions"]]
         for key in ("keyframe_intervals", "intervals", "segments", "predictions"):
             value = payload.get(key)
             if isinstance(value, list):
@@ -342,6 +757,9 @@ def parse_multisegment_response(response, max_intervals: int) -> dict | None:
 
     return {
         "reasoning": reasoning,
+        "num_keyframes": num_keyframes,
+        "object_references": object_references,
+        "subgoal_instructions": subgoal_instructions,
         "intervals": intervals,
         "raw_interval_count": raw_count,
         "truncated_interval_count": max(0, raw_count - len(intervals)),
@@ -740,11 +1158,15 @@ def process_episode(
     api_key: str,
     model: str,
     video_fps: int,
+    thinking_budget: int,
     caption: bool,
     gaze_annot: bool,
+    include_audio: bool,
+    audio_dir: str,
     target_resolution: tuple[int, int] | None,
     debug_dir: str | None,
     config_name: str,
+    prompt_variant: str,
     max_intervals: int,
     match_frame_tolerance: int,
     verbose: bool,
@@ -798,6 +1220,12 @@ def process_episode(
             "verbose_lines": [],
         }
 
+    audio_path = None
+    if include_audio:
+        candidate_audio = os.path.join(audio_dir, f"{episode_name}_audio.wav")
+        if os.path.exists(candidate_audio):
+            audio_path = candidate_audio
+
     video_bytes = prepare_video(
         video_path,
         caption=caption,
@@ -805,13 +1233,16 @@ def process_episode(
         transcript=transcript,
         gaze_data=gaze_frames,
         target_resolution=target_resolution,
+        include_audio=include_audio,
+        audio_path=audio_path,
     )
-    needs_overlay = caption or gaze_annot or (target_resolution is not None)
+    needs_overlay = caption or gaze_annot or (target_resolution is not None) or include_audio
     _save_debug_video(debug_dir, index, video_bytes, needs_overlay)
 
-    prompt = PROMPT_TEMPLATE_MULTI.format(
-        transcript=transcript["text"],
-        duration=gt["duration_sec"],
+    prompt = build_multi_prompt(
+        prompt_variant=prompt_variant,
+        transcript_text=transcript["text"],
+        duration_sec=gt["duration_sec"],
         fps=gt["fps"],
         config_note=PROMPT_CONFIG_NOTES[config_name],
         max_intervals=max_intervals,
@@ -836,6 +1267,7 @@ def process_episode(
                 video_bytes,
                 prompt,
                 video_fps=video_fps,
+                thinking_budget=thinking_budget,
             )
             raw_text = response.text
             cost_info = extract_cost(response, model)
@@ -914,17 +1346,31 @@ def main():
         description="Gemini VLM multi-segment evaluation for keyframe detection"
     )
     parser.add_argument("--dataset-dir", default="./dataset", help="Path to dataset/ directory")
-    parser.add_argument("--model", default="gemini-2.5-pro", choices=MODEL_CHOICES)
+    parser.add_argument("--model", default=DEFAULT_GEMINI_MODEL, choices=MODEL_CHOICES)
     parser.add_argument("--output-dir", default="./eval_results_multiseg")
     parser.add_argument("--resume", action="store_true", help="Skip episodes that already have results")
     parser.add_argument("--episodes", default=None, help="Comma-separated episode names (default: all)")
-    parser.add_argument("--video-fps", type=int, default=2, help="FPS hint sent to Gemini for video sampling")
+    parser.add_argument("--video-fps", type=int, default=DEFAULT_GEMINI_VIDEO_FPS_HINT, help="FPS hint sent to Gemini for video sampling")
+    parser.add_argument("--thinking-budget", type=int, default=DEFAULT_THINKING_BUDGET, help="Gemini thinking budget. Use 0 for minimal/off thinking.")
     parser.add_argument("--caption", action="store_true", help="Overlay real-time transcript captions on the video")
     parser.add_argument("--gaze-annot", action="store_true", help="Overlay gaze point (green marker) on the video")
+    parser.add_argument("--include-audio", action="store_true", help="Mux sidecar audio into the MP4 sent to Gemini")
+    parser.add_argument("--audio-dir", default="./preproc_files", help="Directory containing {episode}_audio.wav sidecar audio")
     parser.add_argument("--target-resolution", default="256", help="Resize video before overlay; use 'none' to keep original resolution")
     parser.add_argument("--api-key", default="", help="Gemini API key (optional if GEMINI_API_KEY or .env is set)")
     parser.add_argument("--debug", action="store_true", help="Save the exact VLM input videos")
     parser.add_argument("--verbose", action="store_true")
+    parser.add_argument(
+        "--prompt-variant",
+        default="baseline",
+        choices=sorted(PROMPT_VARIANT_NOTES.keys()),
+        help="Prompt template variant to use for multi-segment evaluation",
+    )
+    parser.add_argument(
+        "--exp-suffix",
+        default="",
+        help="Optional suffix appended to output filenames so repeated runs do not overwrite each other",
+    )
     parser.add_argument("--max-intervals", type=int, default=4, help="Maximum number of intervals the VLM may return")
     parser.add_argument("--match-frame-tolerance", type=int, default=3, help="Allowed frame gap when matching predicted intervals to GT intervals")
     parser.add_argument("--workers", type=int, default=4, help="Number of episode workers for parallel VLM calls")
@@ -948,17 +1394,23 @@ def main():
         )
 
     tag_parts = ["multiseg", args.model, f"fps{args.video_fps}", f"max{args.max_intervals}"]
+    tag_parts.append(f"prompt-{args.prompt_variant}")
+    if args.include_audio:
+        tag_parts.append("audio")
     if args.caption:
         tag_parts.append("cap")
     if args.gaze_annot:
         tag_parts.append("gaze")
+    if args.exp_suffix:
+        tag_parts.append(args.exp_suffix)
     exp_tag = "_".join(tag_parts)
 
     config_name = get_config_name(args.caption, args.gaze_annot)
     print(
         f"[eval-multiseg] {len(episode_names)} episodes, model={args.model}, "
-        f"video_fps={args.video_fps}, config={config_name}, max_intervals={args.max_intervals}"
+        f"video_fps={args.video_fps}, config={config_name}, prompt={args.prompt_variant}, max_intervals={args.max_intervals}"
         + (f", resolution={target_resolution}" if target_resolution else "")
+        + (", audio=on" if args.include_audio else ", audio=off")
         + f", workers={max(1, args.workers)}"
     )
 
@@ -997,11 +1449,15 @@ def main():
                     api_key=api_key,
                     model=args.model,
                     video_fps=args.video_fps,
+                    thinking_budget=args.thinking_budget,
                     caption=args.caption,
                     gaze_annot=args.gaze_annot,
+                    include_audio=args.include_audio,
+                    audio_dir=args.audio_dir,
                     target_resolution=target_resolution,
                     debug_dir=debug_dir,
                     config_name=config_name,
+                    prompt_variant=args.prompt_variant,
                     max_intervals=args.max_intervals,
                     match_frame_tolerance=args.match_frame_tolerance,
                     verbose=args.verbose,
@@ -1042,8 +1498,12 @@ def main():
             {
                 "model": args.model,
                 "video_fps": args.video_fps,
+                "thinking_budget": args.thinking_budget,
                 "caption": args.caption,
                 "gaze_annot": args.gaze_annot,
+                "include_audio": args.include_audio,
+                "prompt_variant": args.prompt_variant,
+                "exp_suffix": args.exp_suffix,
                 "max_intervals": args.max_intervals,
                 "match_frame_tolerance": args.match_frame_tolerance,
                 "workers": worker_count,
@@ -1056,10 +1516,14 @@ def main():
     results_json_dir = "results"
     os.makedirs(results_json_dir, exist_ok=True)
     results_json_name = (
-        f"result_multiseg_{args.model}_gaze_{'true' if args.gaze_annot else 'false'}"
+        f"result_multiseg_{args.model}_audio_{'true' if args.include_audio else 'false'}"
+        f"_gaze_{'true' if args.gaze_annot else 'false'}"
         f"_cap_{'true' if args.caption else 'false'}"
-        f"_fps{args.video_fps}_max{args.max_intervals}.json"
+        f"_fps{args.video_fps}_max{args.max_intervals}_prompt_{args.prompt_variant}.json"
     )
+    if args.exp_suffix:
+        stem, ext = os.path.splitext(results_json_name)
+        results_json_name = f"{stem}_{args.exp_suffix}{ext}"
     results_json_path = os.path.join(results_json_dir, results_json_name)
 
     episodes_data = []
@@ -1075,6 +1539,12 @@ def main():
                 for interval in result["prediction"]["intervals"]
             ]
             episode_entry["prediction_reasoning"] = result["prediction"].get("reasoning", "")
+            if result["prediction"].get("num_keyframes") is not None:
+                episode_entry["predicted_num_keyframes"] = result["prediction"]["num_keyframes"]
+            if result["prediction"].get("object_references"):
+                episode_entry["predicted_object_references"] = result["prediction"]["object_references"]
+            if result["prediction"].get("subgoal_instructions"):
+                episode_entry["predicted_subgoal_instructions"] = result["prediction"]["subgoal_instructions"]
         if result.get("gt"):
             episode_entry["gt_intervals_frames"] = [
                 [segment["start_frame"], segment["end_frame"]]
@@ -1092,10 +1562,12 @@ def main():
             {
                 "config": {
                     "model": args.model,
+                    "include_audio": args.include_audio,
                     "gaze_annot": args.gaze_annot,
                     "caption": args.caption,
                     "video_fps": args.video_fps,
                     "config_name": config_name,
+                    "prompt_variant": args.prompt_variant,
                     "max_intervals": args.max_intervals,
                     "match_frame_tolerance": args.match_frame_tolerance,
                     "workers": worker_count,
