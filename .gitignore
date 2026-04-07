@@ -4,6 +4,14 @@ vrs_files/
 preproc_files/
 dataset/
 eval_results_multiseg/
+eval_results/
+eval_results_async/
+eval_results_async_runtime_viz/
+eval_results_task_intervention/
+simple_vlm_text_runs/
+process/
+dataset1/
+HRI_lerobot_preprocessing/
 backup/
 debug/
 results/
@@ -11,17 +19,40 @@ results/
 # Large files
 *.zip
 *.vrs
+*.parquet
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.webm
+*.npz
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.bmp
+*.webp
+*.tif
+*.tiff
+*.ico
+*.pt
+*.pth
 
 # Python cache
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
+*.npy
+*.json
+*.wav
+*.txt
+*.json
 
 # macOS
 .DS_Store
 .env
 
 # Model checkpoints (optional - uncomment if you don't want to track these)
-# model/checkpoints/
-# inference/model/pretrained_weights/
+model/checkpoints/
+inference/model/pretrained_weights/**/weights.pth
